@@ -1,0 +1,22 @@
+---
+layout: default
+title: Your New Jekyll Site
+---
+
+<div id="home">
+  Current
+    <br /><br />
+    <a href="http://www.pixelplant.com">PixelPlant</a><br />
+    <a href="http://www.bonsaijs.org">Bonsai</a><br />
+    <a href="http://www.uxebu.com">uxebu</a><br /><br />
+    Previous
+    <br /><br />
+    <a href="http://www.dojocampus.org">Dojo Campus</a> | <a href="http://www.dojotoolkit.org">Dojo Toolkit</a><br />
+    <a href="http://www.rndmgnrtn.com">RNDMGNRTN</a>
+  <!-- <h1>Blog Posts</h1> -->
+  <ul class="posts">
+    {% for post in site.posts %}
+      <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="{{ post.url }}">{{ post.title }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
