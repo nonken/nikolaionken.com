@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+<title type="text">nikolaionken.com</title>
+<subtitle type="text">Thoughts on the internet are not my own</subtitle>
+<generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
+<link rel="self" type="application/atom+xml" href="/feed.xml" />
+<link rel="alternate" type="text/html" href="" />
+<updated>2013-07-26T21:43:53+02:00</updated>
+<id>/</id>
+<author>
+  <name>Nikolai Onken</name>
+  <uri>/</uri>
+  <email>mail@nikolaionken.com.com</email>
+</author>
+
+
+<entry>
+  <title type="html"><![CDATA[Cloud privacy will be the new organic food]]></title>
+  <link rel="alternate" type="text/html" href="/could-privacy-will-be-the-new-organic-food.html" />
+  <id>/could-privacy-will-be-the-new-organic-food</id>
+  <published>2013-07-26T12:07:46+02:00</published>
+  <updated>2013-07-26T12:07:46+02:00</updated>
+  <author>
+    <name>Nikolai Onken</name>
+    <uri></uri>
+    <email>mail@nikolaionken.com.com</email>
+  </author>
+  <content type="html">&lt;p&gt;When franchising was started by Howard Johnson in the 1930&amp;#8217;s, no-one could predict what impact this would have on the food industry. Now forward a couple of years &lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/could-privacy-will-be-the-new-organic-food.html&quot;&gt;Cloud privacy will be the new organic food&lt;/a&gt; was originally published by Nikolai Onken at &lt;a href=&quot;&quot;&gt;nikolaionken.com&lt;/a&gt; on July 26, 2013.&lt;/p&gt;</content>
+</entry>
+
+
+<entry>
+  <title type="html"><![CDATA[What encrypting your content really means]]></title>
+  <link rel="alternate" type="text/html" href="/what-encryption-really-means.html" />
+  <id>/what-encryption-really-means</id>
+  <published>2013-07-20T12:07:46+02:00</published>
+  <updated>2013-07-20T12:07:46+02:00</updated>
+  <author>
+    <name>Nikolai Onken</name>
+    <uri></uri>
+    <email>mail@nikolaionken.com.com</email>
+  </author>
+  <content type="html">&lt;p&gt;Current affairs around how government agencies (really, anyone with right access) are using the internet as a 
+tool to invade our privacy are troublesome to day the least. &lt;/p&gt;
+
+&lt;p&gt;The discussions triggered are of very fundamental nature and require all of us to go down to the bottom of all of this,
+and ultimately say yes or no to what I would call a basic human right - privacy.&lt;/p&gt;
+
+&lt;p&gt;So whatever your opinion is, in this discussion, shut down diplomacy, and apply your oppinion to anyone, anywhere and anytime - no exception!&lt;/p&gt;
+
+&lt;h2 id=&quot;how-technical-laziness-and-i-have-nothing-to-hide-play-well-together&quot;&gt;How technical laziness and &amp;#8220;I have nothing to hide&amp;#8221; play well together&lt;/h2&gt;
+
+&lt;p&gt;One of the most often mentioned phrases amongst people I speak to about this is following:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;I've nothing to hide, so whats the big deal?
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;I would make a bet, that each and every one of us will have something she doesn&amp;#8217;t want everybody to know. Phil Zimmermann, the inventor of the PGP encryption &lt;a href=&quot;http://www.spectacle.org/795/byzim.html&quot;&gt;wrote about exactly this topic in 1995&lt;/a&gt; and for me personally a very convincing argument is the one that you wouldn&amp;#8217;t let police search your home without warrant - would you? Think about this and take time to do so, maybe you can come up with other reasons straight away, maybe it requires some though. &lt;/p&gt;
+
+&lt;p&gt;Lets dig into this a bit deeper and look at how we tend to approach the &amp;#8216;nothing to hide&amp;#8217; part of this:&lt;/p&gt;
+
+&lt;h2 id=&quot;the-beauty-of-privacy&quot;&gt;The beauty of privacy&lt;/h2&gt;
+
+&lt;p&gt;Thinking about all the special moments we have, as humans, do you really want anyone to have access to those, anywhere, anytime?
+Special moments with your loved ones, you remember for exactly the fact that they were not shared with anyone?&lt;/p&gt;
+
+&lt;p&gt;Think about the beauty of being able to decide to continue a discussion in private.&lt;/p&gt;
+
+&lt;p&gt;In similar lines, think about how you sometimes work better when no-one disturbs you // Research on team / vs. working alone&lt;/p&gt;
+
+&lt;p&gt;There is an inherent beauty of having a choice of when you want to share something whith whomever, wherever.
+And this beauty is something we have to embrace, protect and defend.&lt;/p&gt;
+
+&lt;p&gt;Stating that you have nothing to hide, is a lazy, not well thought off cop-out and opens doors wide open
+to destroying something we humans are capable of doing - being free to decide who we share our thoughts with. &lt;/p&gt;
+
+&lt;h2 id=&quot;technology-has-made-us-lazy&quot;&gt;Technology has made us lazy&lt;/h2&gt;
+
+&lt;p&gt;We have become very lazy when it becomes to valuing our own personal beings.
+The social media buzz is making us blind 
+Facebook, Google, Apple and others have made it amazingly easy to share content,
+to make use of the amazing technology we have at our hands.&lt;/p&gt;
+
+&lt;p&gt;Honest and real data security for their users really has &lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://medium.com/writers-on-writing/336300490cbb&quot;&gt;Andrea Phillips&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://cryptoparty.is/files/cryptoparty-handbook-2013-07-10/cryptoparty-handbook-2013-07-10.pdf&quot;&gt;Cryptoparty Handbook&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;developers-are-lazy&quot;&gt;Developers are lazy&lt;/h2&gt;
+
+&lt;p&gt;I would argue, that developers are inherently of lazy nature (at least I would classify myself lazy in that context). We are driven by building things, solve the unsolvable and once having solved a particular problem, moving onto the next one.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Privacy is a very annoying and unattractive topic to startups
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Think about this for a while. You have an idea for an amazing new online service, the next big thing. You build it, prototype, launch. You have user accounts, are working on amazing features and the last thing you really want to work on is&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Implementing that someone can actually delete his account&lt;/li&gt;
+  &lt;li&gt;When you implement it, that you really delete ALL data.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This is a hard problem - imagine a simple commenting function, where you see who commented on something. Do you want to delete all comments and therefor loose your platforms value? Do you want to keep the comment and use an anonymous? &lt;/p&gt;
+
+&lt;h2 id=&quot;opportunities&quot;&gt;Opportunities&lt;/h2&gt;
+
+&lt;p&gt;Changing how we communicate is a massive opportunity and extremely hard.
+Think of how we all really hate email, but still it is there and lots of
+startups are trying change the status quo.&lt;/p&gt;
+
+&lt;p&gt;You&amp;#8217;ll find this post in your &lt;code&gt;_posts&lt;/code&gt; directory - edit this post and re-build (or run with the &lt;code&gt;-w&lt;/code&gt; switch) to see your changes!
+To add new posts, simply add a file in the &lt;code&gt;_posts&lt;/code&gt; directory that follows the convention: YYYY-MM-DD-name-of-post.ext.&lt;/p&gt;
+
+&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;Tom&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &amp;#39;Hi, Tom&amp;#39; to STDOUT.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Check out the &lt;a href=&quot;http://jekyllrb.com&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/mojombo/jekyll&quot;&gt;Jekyll&amp;#8217;s GitHub repo&lt;/a&gt;.&lt;/p&gt;
+
+
+  &lt;p&gt;&lt;a href=&quot;/what-encryption-really-means.html&quot;&gt;What encrypting your content really means&lt;/a&gt; was originally published by Nikolai Onken at &lt;a href=&quot;&quot;&gt;nikolaionken.com&lt;/a&gt; on July 20, 2013.&lt;/p&gt;</content>
+</entry>
+
+</feed>
