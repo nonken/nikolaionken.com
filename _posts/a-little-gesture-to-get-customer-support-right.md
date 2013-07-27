@@ -16,7 +16,7 @@ but also because
 
 ## Support done right and wrong
 
-I want to show you two concrete personal examples of where I saw large corporations shine and fail:
+I want to show you two concrete personal examples of where I saw large corporations shine and fall:
 
 ### 1. A support team with mandate to fix problems and getting things done
 
@@ -32,7 +32,7 @@ I want to show you two concrete personal examples of where I saw large corporati
 
 *Case:*
 
-> I made a delivery appointment with a courier delivery service for them to drop off a package the next day. When I checked the status next morning, I saw that they've sent it back to where it came from... The reaction I got from their agent was that they are sorry, but that they can't do anything about it. All I could do, was to file a complaint by snail-mail (with what result exactly?) and contact the sender to send again.
+> I made a delivery appointment with a courier delivery service for them to drop off a package the next day. When I checked the status online next morning, I saw that they've sent it back to where it came from... The reaction I got from their agent was that they are sorry, but that they can't do anything about it. All I could do, was to file a complaint by snail-mail (with what result exactly?) and contact the sender to send again.
 
 *Result:*
 
@@ -40,11 +40,11 @@ I want to show you two concrete personal examples of where I saw large corporati
 
 ## A very small gesture is all it takes
 
-Sometimes there literally is nothing you can do (very very few times I believe) and this is your opportunity to shine and to make a personal connection with your customer to keep them on board. We all make mistakes, and we all tend to forgive when we feel that there is honest intend to making up for it.
+Sometimes there literally is nothing you can do (very very few times I believe) and this is your opportunity to shine and to make a personal connection with your customer to keep them on board. We all make mistakes, and we all tend to forgive when we feel that there is honest intend to making up for it. Maybe an odd comparison, but we know it from being in relationships: going through hard times will make your bond stronger many times.
 
-> Give away something for free! In the courier delivery companies case, proactively offer a free shipment within Europe the next time I want to send something. In the airlines case (if they would not have been able to help) give us a free drink while waiting for checkin, or something when boarding, or even just say hello personally when on board and apologise for the problems. 
+> Give away something for free! In the courier delivery companies case, proactively offer a free shipment next time I want to send something. In the airlines case (if they would not have been able to help) give us a free drink while waiting for checkin, or something when boarding, or even just say hello personally when on board and apologise for the problems. 
 
-You very likely have all data at your hand to create that personal connection so there is no reason to not doing it.
+You very likely have all customer data (name, address, preference, etc.) at your hand to create that personal connection so there is no reason for not doing it.
 
 ## The effects would be very simple
 
