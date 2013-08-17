@@ -8,7 +8,7 @@ comments: true
 
 Customer support can be an incredibly tough thing to get right, no matter whether for a small startup or a large corporation. It is not only tough because: 
 
-* real trouble often rises after a sale has been made, and once the money is in the pocket, there often doesn't seem to be any incentive left to value good customer relationship
+* real trouble often rises after a sale has been made, and once the money is in the pocket, there often doesn't seem to be any incentive left to value good customer relationship.
 
 but also because 
 
@@ -57,7 +57,7 @@ You very likely have all customer data (name, address, preference, etc.) at your
 
 It is clear, that you have to have processes in place when you are running a support department, but imagine you are in following situation:
 
-> Actually you made a mistake, but really can't do anything about it
+> Actually you made a mistake, but really can't do anything about it.
 
 If your staff is not able to act freely, and go to all lengths trying to keep a valuable (revenue generating) customer, then
 your processes are flawed. Support teams have to be able to pivot, act and react fast. 
