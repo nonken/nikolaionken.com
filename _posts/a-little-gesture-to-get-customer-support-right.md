@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "A little gesture to get customer support right"
-date:   2013-08-17 12:08:46
+date:   2013-08-17 09:08:46
 categories: customer support
 comments: true
 ---
