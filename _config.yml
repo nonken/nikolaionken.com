@@ -1,20 +1,20 @@
 title:            nikolaionken.com
 tagline:          Thoughts on the internet are not my own
-description:      'Entrepreneur, coder, music'
+description:      'Entrepreneur'
 #Comment out url when working locally to resolve base urls correctly
 url:              http://nikolaionken.com
 
 # Owner/author information
 owner:
   name:           Nikolai Onken
-  avatar:         bio-photo.jpg
+#   avatar:         bio-photo.jpg
   bio:            ""
   email:          mail@nikolaionken.com.com
   # Social networking links are used in author-bio sidebar. Update and remove as you like.
-  twitter:        nonken
-  facebook:       nikolaionken
-  github:         nonken
-  linkedin:       onken
+#   twitter:        nonken
+#   facebook:       nikolaionken
+#   github:         nonken
+#   linkedin:       onken
   instagram:
   lastfm:
   tumblr:
