@@ -20,11 +20,11 @@ export const metadata: Metadata = {
     default: "nikolaionken.com",
     template: "%s | nikolaionken.com",
   },
-  description: "Entrepreneur and engineer. CTO at Asymmetric. Previously VP Engineering at Cloud9 / AWS.",
+  description: "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
   metadataBase: new URL("https://nikolaionken.com"),
   openGraph: {
     title: "nikolaionken.com",
-    description: "Entrepreneur and engineer. CTO at Asymmetric. Previously VP Engineering at Cloud9 / AWS.",
+    description: "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
     url: "https://nikolaionken.com",
     siteName: "nikolaionken.com",
     type: "website",
@@ -60,6 +60,7 @@ export default function RootLayout({
         </main>
 
         <footer className="footer-wrap">
+          <p className="footer-tagline">Code &middot; Build &middot; Create &middot; Explore</p>
           <h6>&copy; {new Date().getFullYear()} Nikolai Onken.</h6>
         </footer>
       </body>
