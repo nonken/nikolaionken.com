@@ -42,6 +42,13 @@ export class Organism {
     this.overlayFade = 0;
     this.textFormationTargets = [];
     this.textFormationActive = false;
+    this.firstFrame = true;
+
+    // Keyboard navigation
+    this.focusedMemoryIndex = -1;
+    this.memoryIds = MEMORIES.map(m => m.id);
+    this._onKeyDown = this._handleKeyboard.bind(this);
+    window.addEventListener("keydown", this._onKeyDown);
 
     // Circadian refresh timer
     this.circadianTimer = 0;
@@ -142,7 +149,7 @@ export class Organism {
   _update() {
     const dt = this.dt;
     this.breathPhase += dt * 0.001 * this.profile.breathRate;
-    this.input.update(0.1);
+    this.input.update(0.3);
 
     // Refresh circadian every 60s
     this.circadianTimer += dt;
@@ -273,6 +280,9 @@ export class Organism {
 
         // Text formation for this node's label
         this._formText(node.label);
+
+        // Notify React for HTML overlay
+        if (this._onDiscoveryChange) this._onDiscoveryChange();
       }
     }
 
@@ -360,10 +370,17 @@ export class Organism {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    // Clear with subtle fade (creates trail effect)
+    // First frame: full opaque clear to prevent artifacts
     const [br, bg, bb] = this.profile.bg;
-    ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, 0.15)`;
-    ctx.fillRect(0, 0, w, h);
+    if (this.firstFrame) {
+      ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
+      ctx.fillRect(0, 0, w, h);
+      this.firstFrame = false;
+    } else {
+      // Subsequent frames: subtle fade for trail effect
+      ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, 0.15)`;
+      ctx.fillRect(0, 0, w, h);
+    }
 
     // Ambient center glow
     const glowR = this.organismRadius * 1.5;
@@ -495,6 +512,103 @@ export class Organism {
     }
   }
 
+  _handleKeyboard(e) {
+    const memIds = this.memoryIds;
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        this.focusedMemoryIndex = (this.focusedMemoryIndex - 1 + memIds.length) % memIds.length;
+      } else {
+        this.focusedMemoryIndex = (this.focusedMemoryIndex + 1) % memIds.length;
+      }
+      // Move cursor to focused memory particle
+      const id = memIds[this.focusedMemoryIndex];
+      const node = this.memory.nodes.get(id);
+      if (node?.particle) {
+        this.input.state.px = node.particle.x;
+        this.input.state.py = node.particle.y;
+        this.input.state.x = node.particle.x;
+        this.input.state.y = node.particle.y;
+        this.input.state.active = true;
+      }
+    } else if (e.key === "Enter" && this.focusedMemoryIndex >= 0) {
+      const id = memIds[this.focusedMemoryIndex];
+      const node = this.memory.nodes.get(id);
+      if (node && !node.discovered) {
+        this.memory.discover(id);
+        if (!node.musicPlayed) {
+          node.musicPlayed = true;
+          const melody = stringToMelody(node.label);
+          this.music.playMelody(melody);
+          this.discoveredOverlay = node;
+          this.overlayFade = 1.0;
+          this._formText(node.label);
+        }
+        // Notify callback for React overlay
+        if (this._onDiscoveryChange) this._onDiscoveryChange();
+      } else if (node?.discovered && node?.url) {
+        window.open(node.url, "_blank", "noopener,noreferrer");
+      }
+    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      if (this.focusedMemoryIndex < 0) {
+        this.focusedMemoryIndex = 0;
+      } else {
+        this.focusedMemoryIndex = (this.focusedMemoryIndex + 1) % memIds.length;
+      }
+      const id = memIds[this.focusedMemoryIndex];
+      const node = this.memory.nodes.get(id);
+      if (node?.particle) {
+        this.input.state.px = node.particle.x;
+        this.input.state.py = node.particle.y;
+        this.input.state.x = node.particle.x;
+        this.input.state.y = node.particle.y;
+        this.input.state.active = true;
+      }
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (this.focusedMemoryIndex < 0) {
+        this.focusedMemoryIndex = memIds.length - 1;
+      } else {
+        this.focusedMemoryIndex = (this.focusedMemoryIndex - 1 + memIds.length) % memIds.length;
+      }
+      const id = memIds[this.focusedMemoryIndex];
+      const node = this.memory.nodes.get(id);
+      if (node?.particle) {
+        this.input.state.px = node.particle.x;
+        this.input.state.py = node.particle.y;
+        this.input.state.x = node.particle.x;
+        this.input.state.y = node.particle.y;
+        this.input.state.active = true;
+      }
+    } else if (e.key === " ") {
+      // Space handled by React audio toggle
+    }
+  }
+
+  /* Returns discovered memory nodes with their current screen positions for HTML overlay */
+  getDiscoveredPositions() {
+    const result = [];
+    for (const [id, node] of this.memory.nodes) {
+      if (node.discovered && node.particle) {
+        result.push({
+          id,
+          label: node.label,
+          desc: node.desc || null,
+          url: node.url || null,
+          type: node.type,
+          x: node.particle.x,
+          y: node.particle.y,
+        });
+      }
+    }
+    return result;
+  }
+
+  onDiscoveryChange(fn) {
+    this._onDiscoveryChange = fn;
+  }
+
   enableAudio() {
     this.music.enable();
   }
@@ -517,5 +631,6 @@ export class Organism {
     this.input.destroy();
     this.music.destroy();
     window.removeEventListener("resize", this._resize);
+    window.removeEventListener("keydown", this._onKeyDown);
   }
 }

@@ -60,8 +60,8 @@ export class Particle {
     this.id = nextId++;
     this.x = x;
     this.y = y;
-    this.px = x + (opts.vx || 0); // previous x (Verlet: velocity is implicit)
-    this.py = y + (opts.vy || 0);
+    this.px = x - (opts.vx || 0); // previous x (Verlet: velocity = current - previous)
+    this.py = y - (opts.vy || 0);
     this.generation = opts.generation || 0;
     this.radius = opts.radius || 2;
     this.mass = opts.mass || 1;

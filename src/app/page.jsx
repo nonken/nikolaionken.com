@@ -10,6 +10,7 @@ export default function Home() {
   const [audioOn, setAudioOn] = useState(false);
   const [ready, setReady] = useState(false);
   const [introPhase, setIntroPhase] = useState("typing"); // typing | breathing | done
+  const [discoveredLinks, setDiscoveredLinks] = useState([]);
 
   // Typewriter state
   const typewriterRef = useRef(null);
@@ -58,6 +59,19 @@ export default function Home() {
     organismRef.current = org;
     org.start();
 
+    // Listen for discovery changes to update clickable links overlay
+    org.onDiscoveryChange(() => {
+      const positions = org.getDiscoveredPositions();
+      setDiscoveredLinks(positions.filter(p => p.url));
+    });
+
+    // Periodically sync link positions with particle positions
+    const syncInterval = setInterval(() => {
+      if (!organismRef.current) return;
+      const positions = organismRef.current.getDiscoveredPositions();
+      setDiscoveredLinks(positions.filter(p => p.url));
+    }, 500);
+
     // Auto-start audio on first user interaction
     let audioStarted = false;
     function startAudio() {
@@ -72,6 +86,7 @@ export default function Home() {
     document.addEventListener("keydown", startAudio);
 
     return () => {
+      clearInterval(syncInterval);
       document.removeEventListener("click", startAudio);
       document.removeEventListener("keydown", startAudio);
       org.destroy();
@@ -102,8 +117,26 @@ export default function Home() {
       <canvas
         ref={canvasRef}
         className="organism-canvas"
-        aria-label="Interactive particle organism — move cursor to explore, dwell near bright particles to discover content"
+        aria-label="Interactive particle organism — move cursor to explore, dwell near bright particles to discover content. Use Tab or arrow keys to navigate between nodes, Enter to reveal."
       />
+
+      {/* Clickable link overlays for discovered memories */}
+      {discoveredLinks.map((link) => (
+        <a
+          key={link.id}
+          className="memory-link"
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            left: `${link.x}px`,
+            top: `${link.y + 30}px`,
+          }}
+          aria-label={`${link.label}${link.desc ? ": " + link.desc : ""}`}
+        >
+          {link.url.replace(/^https?:\/\//, "").replace(/\/$/, "")} &rarr;
+        </a>
+      ))}
 
       {/* Accessible content (screen readers) */}
       <div className="sr-only" role="list" aria-label="Nikolai Onken — projects and identity">

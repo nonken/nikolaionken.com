@@ -183,6 +183,38 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
+   MEMORY LINKS — clickable overlays for discovered nodes
+   ═══════════════════════════════════════════ */
+.memory-link {
+  position: fixed;
+  z-index: 10;
+  transform: translateX(-50%);
+  font-family: var(--font-family-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--glow);
+  opacity: 0.6;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: opacity 0.3s, background 0.3s;
+  pointer-events: auto;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.memory-link:hover {
+  opacity: 1;
+  background: rgba(78, 205, 196, 0.1);
+  color: #fff;
+}
+
+.memory-link:focus-visible {
+  outline: 2px solid var(--glow);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
    SCREEN READER ONLY
    ═══════════════════════════════════════════ */
 .sr-only {
