@@ -21,20 +21,20 @@ export default function AboutPage() {
         experiences that connect us all.
       </p>
 
-      <h3>Current Work</h3>
+      <h3>Work</h3>
       <ul className="work-list">
         <li>
           <a href="https://asymmetric.financial/">Asymmetric</a>{" "}
           <em>CTO &mdash; crypto-focused investment firm</em>
         </li>
         <li>
+          <a href="https://warpmetrics.com/">WarpMetrics</a>{" "}
+          <em>AI-powered coding agents</em>
+        </li>
+        <li>
           <a href="https://mintline.ai/">Mintline.ai</a>{" "}
           <em>AI-powered financial reconciliation</em>
         </li>
-      </ul>
-
-      <h3>Previous Work</h3>
-      <ul className="work-list">
         <li>
           <a href="https://aws.amazon.com/cloud9/">Cloud9 IDE &rarr; AWS</a>{" "}
           <em>
