@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getAllPosts } from "@/lib/posts";
+import { getPublishedPosts } from "@/lib/posts";
 
 export default function Home() {
-  const recentPosts = getAllPosts().slice(0, 5);
+  const recentPosts = getPublishedPosts().slice(0, 5);
 
   return (
     <>

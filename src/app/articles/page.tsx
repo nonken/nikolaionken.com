@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getAllPosts } from "@/lib/posts";
+import { getPublishedPosts } from "@/lib/posts";
 
 export const metadata: Metadata = {
   title: "Articles",
 };
 
 export default function ArticlesPage() {
-  const posts = getAllPosts();
+  const posts = getPublishedPosts();
 
   const postsByYear: Record<string, typeof posts> = {};
   for (const post of posts) {
