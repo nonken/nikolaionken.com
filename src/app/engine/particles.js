@@ -3,6 +3,7 @@
 /*
  * Particle system with Verlet integration and spatial hashing.
  * Each particle stores current + previous position for implicit velocity.
+ * Optimized: numeric hash keys, pre-rendered glow sprites.
  */
 
 const CELL_SIZE = 40;
@@ -17,7 +18,10 @@ export class SpatialHash {
   }
 
   _key(x, y) {
-    return ((x / CELL_SIZE) | 0) + "," + ((y / CELL_SIZE) | 0);
+    // Numeric key avoids string allocation in hot path
+    const cx = (x / CELL_SIZE) | 0;
+    const cy = (y / CELL_SIZE) | 0;
+    return cx * 73856093 + cy * 19349669;
   }
 
   insert(p) {
@@ -39,7 +43,8 @@ export class SpatialHash {
     const maxCy = ((y + radius) / CELL_SIZE) | 0;
     for (let cx = minCx; cx <= maxCx; cx++) {
       for (let cy = minCy; cy <= maxCy; cy++) {
-        const arr = this.cells.get(cx + "," + cy);
+        const k = cx * 73856093 + cy * 19349669;
+        const arr = this.cells.get(k);
         if (!arr) continue;
         for (let i = 0; i < arr.length; i++) {
           const p = arr[i];
@@ -60,7 +65,7 @@ export class Particle {
     this.id = nextId++;
     this.x = x;
     this.y = y;
-    this.px = x - (opts.vx || 0); // previous x (Verlet: velocity = current - previous)
+    this.px = x - (opts.vx || 0);
     this.py = y - (opts.vy || 0);
     this.generation = opts.generation || 0;
     this.radius = opts.radius || 2;
@@ -68,7 +73,7 @@ export class Particle {
     this.life = 1.0;
     this.maxLife = 1.0;
     this.decay = opts.decay || 0;
-    this.hue = opts.hue || 174; // teal
+    this.hue = opts.hue || 174;
     this.saturation = opts.saturation || 70;
     this.lightness = opts.lightness || 55;
     this.alpha = opts.alpha || 0.8;
@@ -93,7 +98,6 @@ export class Particle {
   }
 
   addForce(fx, fy) {
-    // In Verlet, force = acceleration applied to current position
     this.x += fx;
     this.y += fy;
   }
@@ -142,4 +146,28 @@ export class ParticlePool {
   get count() {
     return this.particles.length;
   }
+}
+
+/*
+ * Pre-rendered glow sprite for non-memory particles.
+ * Avoids creating radialGradient per particle per frame.
+ */
+let _glowCanvas = null;
+let _glowSize = 0;
+
+export function getGlowSprite(size) {
+  if (_glowCanvas && _glowSize === size) return _glowCanvas;
+  _glowSize = size;
+  _glowCanvas = document.createElement("canvas");
+  const s = size * 2;
+  _glowCanvas.width = s;
+  _glowCanvas.height = s;
+  const ctx = _glowCanvas.getContext("2d");
+  const grad = ctx.createRadialGradient(size, size, 0, size, size, size);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.4, "rgba(255,255,255,0.3)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, s, s);
+  return _glowCanvas;
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { Organism } from "./engine/organism.js";
-import { MEMORIES } from "./engine/memory.js";
+import { MEMORIES } from "./engine/data.js";
 
 export default function Home() {
   const canvasRef = useRef(null);
@@ -11,13 +12,14 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [introPhase, setIntroPhase] = useState("typing"); // typing | breathing | done
   const [discoveredLinks, setDiscoveredLinks] = useState([]);
+  const [discoveredLabels, setDiscoveredLabels] = useState([]);
+  const audioToggleRef = useRef(null);
 
   // Typewriter state
   const typewriterRef = useRef(null);
   const introText = "> nikolai onken";
 
   useEffect(() => {
-    // Typewriter intro
     const el = typewriterRef.current;
     if (!el) return;
     let i = 0;
@@ -59,36 +61,26 @@ export default function Home() {
     organismRef.current = org;
     org.start();
 
-    // Listen for discovery changes to update clickable links overlay
+    // Listen for discovery changes — update both links and labels
     org.onDiscoveryChange(() => {
       const positions = org.getDiscoveredPositions();
       setDiscoveredLinks(positions.filter(p => p.url));
+      setDiscoveredLabels(positions);
     });
 
-    // Periodically sync link positions with particle positions
-    const syncInterval = setInterval(() => {
+    // Sync link positions with rAF (not setInterval) for smooth tracking
+    let syncRafId;
+    function syncPositions() {
       if (!organismRef.current) return;
       const positions = organismRef.current.getDiscoveredPositions();
       setDiscoveredLinks(positions.filter(p => p.url));
-    }, 500);
-
-    // Auto-start audio on first user interaction
-    let audioStarted = false;
-    function startAudio() {
-      if (audioStarted) return;
-      audioStarted = true;
-      org.enableAudio();
-      setAudioOn(true);
-      document.removeEventListener("click", startAudio);
-      document.removeEventListener("keydown", startAudio);
+      setDiscoveredLabels(positions);
+      syncRafId = requestAnimationFrame(syncPositions);
     }
-    document.addEventListener("click", startAudio);
-    document.addEventListener("keydown", startAudio);
+    syncRafId = requestAnimationFrame(syncPositions);
 
     return () => {
-      clearInterval(syncInterval);
-      document.removeEventListener("click", startAudio);
-      document.removeEventListener("keydown", startAudio);
+      cancelAnimationFrame(syncRafId);
       org.destroy();
       organismRef.current = null;
     };
@@ -96,8 +88,14 @@ export default function Home() {
 
   const toggleAudio = useCallback(() => {
     if (!organismRef.current) return;
-    const on = organismRef.current.toggleAudio();
-    setAudioOn(on);
+    // If audio hasn't been initialized yet, enable it first
+    if (!organismRef.current.audioEnabled) {
+      organismRef.current.enableAudio();
+      setAudioOn(true);
+    } else {
+      const on = organismRef.current.toggleAudio();
+      setAudioOn(on);
+    }
   }, []);
 
   return (
@@ -117,10 +115,25 @@ export default function Home() {
       <canvas
         ref={canvasRef}
         className="organism-canvas"
-        aria-label="Interactive particle organism — move cursor to explore, dwell near bright particles to discover content. Use Tab or arrow keys to navigate between nodes, Enter to reveal."
+        aria-label="Interactive particle organism — move cursor to explore, dwell near bright particles to discover content. Use arrow keys to navigate between nodes, Enter to reveal."
       />
 
-      {/* Clickable link overlays for discovered memories */}
+      {/* DOM labels for discovered memories (crisp text over canvas) */}
+      {discoveredLabels.map((item) => (
+        <div
+          key={item.id}
+          className="memory-label"
+          style={{
+            left: `${item.x}px`,
+            top: `${item.y - 30}px`,
+          }}
+        >
+          <span className="memory-label__name">{item.label}</span>
+          {item.desc && <span className="memory-label__desc">{item.desc}</span>}
+        </div>
+      ))}
+
+      {/* Clickable link overlays for discovered memories with URLs */}
       {discoveredLinks.map((link) => (
         <a
           key={link.id}
@@ -130,7 +143,7 @@ export default function Home() {
           rel="noopener noreferrer"
           style={{
             left: `${link.x}px`,
-            top: `${link.y + 30}px`,
+            top: `${link.y + 20}px`,
           }}
           aria-label={`${link.label}${link.desc ? ": " + link.desc : ""}`}
         >
@@ -156,6 +169,7 @@ export default function Home() {
       {/* Audio toggle */}
       {ready && (
         <button
+          ref={audioToggleRef}
           className={`audio-toggle ${audioOn ? "audio-toggle--active" : ""}`}
           onClick={toggleAudio}
           aria-label={audioOn ? "Disable ambient sound" : "Enable ambient sound"}
@@ -166,7 +180,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="footer">
-        &copy; {new Date().getFullYear()} Nikolai Onken
+        <span>&copy; {new Date().getFullYear()} Nikolai Onken</span>
+        <Link href="/text" className="footer__text-link">[text version]</Link>
       </footer>
     </>
   );
