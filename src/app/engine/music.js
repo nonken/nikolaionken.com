@@ -6,6 +6,7 @@ import { SCALES } from "./circadian.js";
  * Generative music engine.
  * - Additive synthesis: harmonic drone that builds with particle generations
  * - Karplus-Strong: plucked strings when connections form
+ * - Pitch shifting via pinch gesture
  * - All procedural, no samples.
  */
 
@@ -27,6 +28,7 @@ export class MusicEngine {
     this.mood = "ambient";
     this.generationCount = 0;
     this.reverbNode = null;
+    this.pitchShift = 1.0; // 1.0 = normal, <1 = lower, >1 = higher
   }
 
   init() {
@@ -57,13 +59,11 @@ export class MusicEngine {
   }
 
   _createReverb() {
-    // Procedurally generated impulse response
     const length = this.ctx.sampleRate * 2.5;
     const impulse = this.ctx.createBuffer(2, length, this.ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const data = impulse.getChannelData(ch);
       for (let i = 0; i < length; i++) {
-        // Exponential decay with slight randomization
         data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
       }
     }
@@ -76,7 +76,7 @@ export class MusicEngine {
     if (!this.ctx) return;
     const osc = this.ctx.createOscillator();
     osc.type = "sine";
-    osc.frequency.value = freq;
+    osc.frequency.value = freq * this.pitchShift;
 
     const gain = this.ctx.createGain();
     gain.gain.value = volume;
@@ -101,9 +101,8 @@ export class MusicEngine {
     if (!this.ctx || !this.enabled) return;
     this.generationCount = gen;
 
-    // Add harmonic layers as generations increase
     if (gen <= 5 && this.drones.length < gen + 1) {
-      const harmonics = [1, 1.5, 2, 2.5, 3]; // fundamental, fifth, octave, etc
+      const harmonics = [1, 1.5, 2, 2.5, 3];
       const volumes = [0.08, 0.05, 0.04, 0.025, 0.02];
       if (gen < harmonics.length) {
         this._addDrone(BASE_FREQ * harmonics[gen], volumes[gen]);
@@ -115,21 +114,33 @@ export class MusicEngine {
   modulate(nx, ny) {
     if (!this.ctx || !this.enabled || this.drones.length === 0) return;
     const t = this.ctx.currentTime;
-    // Subtle frequency modulation based on position
     for (let i = 0; i < this.drones.length; i++) {
       const d = this.drones[i];
       const detune = (nx - 0.5) * 20 + (ny - 0.5) * 10 * (i + 1);
       d.osc.frequency.linearRampToValueAtTime(
-        d.baseFreq + detune,
+        (d.baseFreq + detune) * this.pitchShift,
         t + 0.15
       );
     }
   }
 
-  /* Karplus-Strong plucked string for connection discovery */
+  /* Shift pitch for pinch gesture */
+  setPitchShift(factor) {
+    this.pitchShift = Math.max(0.5, Math.min(2.0, factor));
+    if (!this.ctx || !this.enabled) return;
+    const t = this.ctx.currentTime;
+    for (const d of this.drones) {
+      d.osc.frequency.linearRampToValueAtTime(
+        d.baseFreq * this.pitchShift,
+        t + 0.1
+      );
+    }
+  }
+
+  /* Karplus-Strong plucked string */
   pluck(semitones, duration = 1.5) {
     if (!this.ctx || !this.enabled) return;
-    const freq = midiToFreq(semitones);
+    const freq = midiToFreq(semitones) * this.pitchShift;
     const sampleRate = this.ctx.sampleRate;
     const bufferSize = Math.round(sampleRate / freq);
     const totalSamples = Math.round(sampleRate * duration);
@@ -137,12 +148,10 @@ export class MusicEngine {
     const buffer = this.ctx.createBuffer(1, totalSamples, sampleRate);
     const data = buffer.getChannelData(0);
 
-    // Initialize with noise burst
     for (let i = 0; i < bufferSize; i++) {
       data[i] = Math.random() * 2 - 1;
     }
 
-    // Karplus-Strong: average adjacent samples with decay
     for (let i = bufferSize; i < totalSamples; i++) {
       data[i] = (data[i - bufferSize] + data[i - bufferSize + 1]) * 0.498;
     }
@@ -165,7 +174,6 @@ export class MusicEngine {
     const noteDelay = 0.2;
 
     semitoneArray.forEach((semi, i) => {
-      // Map to current scale
       const scaleNote = scale[semi % scale.length];
       const octave = Math.floor(semi / scale.length);
       const finalSemitone = scaleNote + octave * 12;

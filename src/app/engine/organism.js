@@ -1,6 +1,6 @@
 "use client";
 
-import { ParticlePool } from "./particles.js";
+import { ParticlePool, getGlowSprite } from "./particles.js";
 import { MemorySystem, MEMORIES, textToPositions, stringToMelody } from "./memory.js";
 import { createInputHandler } from "./input.js";
 import { getCircadianProfile } from "./circadian.js";
@@ -29,33 +29,71 @@ export class Organism {
     this.generation = 0;
     this.maxGeneration = 5;
     this.bloomTimer = 0;
-    this.bloomInterval = 600; // ms between bloom waves
+    this.bloomInterval = 600;
     this.breathPhase = 0;
     this.centerX = canvas.width / 2;
     this.centerY = canvas.height / 2;
     this.organismRadius = Math.min(canvas.width, canvas.height) * 0.25;
+    this.baseOrganismRadius = this.organismRadius;
     this.running = false;
     this.lastFrame = 0;
     this.rafId = null;
 
-    this.discoveredOverlay = null; // currently displayed memory info
+    this.discoveredOverlay = null;
     this.overlayFade = 0;
     this.textFormationTargets = [];
     this.textFormationActive = false;
+    this.textReleaseTimer = 0; // for graceful text release
     this.firstFrame = true;
+
+    // Birth animation state
+    this.birthPhase = "seed"; // seed | blooming | alive
+    this.birthTimer = 0;
+    this.birthIndex = 0; // next memory to birth
+    this.memoriesPlaced = false;
+    // Particles with pending target release (timestamp-based, no setTimeout)
+    this.birthTargetReleases = []; // { particle, releaseAt }
+
+    // Idle respiration state
+    this.idleTimer = 0;
+    this.idlePulseTimer = 0;
+    this.isIdle = false;
+
+    // Cached memory particle list (only changes during birth phase)
+    this._memoryParticles = [];
+
+    // Adaptive quality — circular buffer avoids O(n) shift
+    this._ftSamples = new Float64Array(60);
+    this._ftIndex = 0;
+    this._ftCount = 0;
+    this.qualityLevel = 1.0; // 1.0 = full, 0.75 = reduced
+    this.useGlowSprites = true;
+
+    // Cursor glow trail
+    this.cursorTrail = [];
+    this.maxCursorTrail = 12;
 
     // Keyboard navigation
     this.focusedMemoryIndex = -1;
     this.memoryIds = MEMORIES.map(m => m.id);
-    this._onKeyDown = this._handleKeyboard.bind(this);
-    window.addEventListener("keydown", this._onKeyDown);
+    this._boundKeyDown = this._handleKeyboard.bind(this);
+    window.addEventListener("keydown", this._boundKeyDown);
 
     // Circadian refresh timer
     this.circadianTimer = 0;
 
-    this._resize = this._onResize.bind(this);
-    window.addEventListener("resize", this._resize, { passive: true });
+    // Touch burst callback
+    this.input.state.onTouchBurst = (x, y) => this._touchBurst(x, y);
+
+    this._boundResize = this._onResize.bind(this);
+    window.addEventListener("resize", this._boundResize, { passive: true });
     this._onResize();
+
+    // Pre-render glow sprite
+    this._glowSprite = null;
+
+    // Bind loop once (avoid creating new function every frame)
+    this._boundLoop = this._loop.bind(this);
   }
 
   _onResize() {
@@ -69,7 +107,8 @@ export class Organism {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.centerX = w / 2;
     this.centerY = h / 2;
-    this.organismRadius = Math.min(w, h) * 0.25;
+    this.baseOrganismRadius = Math.min(w, h) * 0.25;
+    this.organismRadius = this.baseOrganismRadius;
   }
 
   start() {
@@ -77,20 +116,19 @@ export class Organism {
     this.running = true;
     this.lastFrame = performance.now();
 
-    // Spawn initial seed particle
+    // Only spawn seed particle — memories birth later via animation
     this._spawnSeed();
-
-    // Place memory particles
-    this._placeMemories();
 
     this.music.setScale(this.profile.scale);
     this.music.setMood(this.profile.musicMood);
 
-    this.rafId = requestAnimationFrame(this._loop.bind(this));
+    // Initialize glow sprite
+    this._glowSprite = getGlowSprite(16);
+
+    this.rafId = requestAnimationFrame(this._boundLoop);
   }
 
   _spawnSeed() {
-    // The first particle — the organism's origin
     this.pool.add(this.centerX, this.centerY, {
       generation: 0,
       radius: 3,
@@ -102,54 +140,111 @@ export class Organism {
     });
   }
 
-  _placeMemories() {
-    // Distribute memory particles in a spiral around center
+  _birthNextMemory() {
+    if (this.birthIndex >= MEMORIES.length) {
+      this.birthPhase = "alive";
+      this.memoriesPlaced = true;
+      return;
+    }
+
+    const i = this.birthIndex;
     const count = MEMORIES.length;
+    const angle = i * GOLDEN_ANGLE;
+    const r = this.organismRadius * 0.3 + (i / count) * this.organismRadius * 0.7;
+    // Birth from center, target position on spiral
+    const targetX = this.centerX + Math.cos(angle) * r;
+    const targetY = this.centerY + Math.sin(angle) * r;
+
+    const mem = MEMORIES[i];
+    const hue = mem.type === "identity" ? 0 :
+                mem.type === "root" ? this.profile.accent.h :
+                this.profile.primary.h;
+    const sat = mem.type === "identity" ? 65 : this.profile.primary.s;
+    const light = mem.type === "root" ? 85 : mem.type === "identity" ? 60 : this.profile.primary.l;
+
+    // Spawn at center, will drift to target
+    const p = this.pool.add(this.centerX, this.centerY, {
+      generation: 0,
+      radius: mem.type === "root" ? 5 : 3.5,
+      mass: 3,
+      hue,
+      saturation: sat,
+      lightness: light,
+      alpha: 0.95,
+      maxTrail: 3,
+      // Small initial velocity toward target
+      vx: (targetX - this.centerX) * 0.015,
+      vy: (targetY - this.centerY) * 0.015,
+    });
+    if (p) {
+      this.memory.assignParticle(mem.id, p);
+      // Set temporary target to guide particle to spiral position
+      p.targetX = targetX;
+      p.targetY = targetY;
+      p.targetForce = 0.008;
+      // Schedule target release via update loop (no setTimeout — safe on destroy)
+      this.birthTargetReleases.push({ particle: p, releaseAt: this.time + 2000 });
+      // Cache memory particle reference
+      this._memoryParticles.push(p);
+    }
+
+    this.birthIndex++;
+  }
+
+  _touchBurst(x, y) {
+    // Spawn small burst of particles at touch point
+    const count = 6;
     for (let i = 0; i < count; i++) {
-      const angle = i * GOLDEN_ANGLE;
-      const r = this.organismRadius * 0.3 + (i / count) * this.organismRadius * 0.7;
-      const x = this.centerX + Math.cos(angle) * r;
-      const y = this.centerY + Math.sin(angle) * r;
-
-      const mem = MEMORIES[i];
-      const hue = mem.type === "identity" ? 0 : // warm for identity
-                  mem.type === "root" ? this.profile.accent.h :
-                  this.profile.primary.h;
-      const sat = mem.type === "identity" ? 65 : this.profile.primary.s;
-      const light = mem.type === "root" ? 85 : mem.type === "identity" ? 60 : this.profile.primary.l;
-
-      const p = this.pool.add(x, y, {
-        generation: 0,
-        radius: mem.type === "root" ? 5 : 3.5,
-        mass: 3,
-        hue,
-        saturation: sat,
-        lightness: light,
-        alpha: 0.95,
-        maxTrail: 3,
+      const angle = (i / count) * TWO_PI;
+      const speed = 1 + Math.random() * 2;
+      this.pool.add(x, y, {
+        generation: this.generation,
+        radius: 1 + Math.random(),
+        hue: this.profile.primary.h,
+        saturation: this.profile.primary.s,
+        lightness: this.profile.primary.l + 10,
+        alpha: 0.6,
+        decay: 0.08,
+        maxTrail: 4,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
       });
-      if (p) {
-        this.memory.assignParticle(mem.id, p);
-      }
     }
   }
 
   _loop(ts) {
     if (!this.running) return;
-    this.dt = Math.min(ts - this.lastFrame, 50); // cap at 50ms
+    this.dt = Math.min(ts - this.lastFrame, 50);
     this.lastFrame = ts;
     this.time += this.dt;
+
+    // Adaptive quality monitoring — circular buffer (O(1) per frame)
+    this._ftSamples[this._ftIndex] = this.dt;
+    this._ftIndex = (this._ftIndex + 1) % 60;
+    if (this._ftCount < 60) this._ftCount++;
+    if (this._ftCount === 60 && this.qualityLevel === 1.0) {
+      let sum = 0;
+      for (let i = 0; i < 60; i++) sum += this._ftSamples[i];
+      if (sum / 60 > 25) { // <40fps
+        this.qualityLevel = 0.75;
+        this.pool.max = Math.floor(500 * 0.75);
+        this.useGlowSprites = true;
+      }
+    }
 
     this._update();
     this._draw();
 
-    this.rafId = requestAnimationFrame(this._loop.bind(this));
+    this.rafId = requestAnimationFrame(this._boundLoop);
   }
 
   _update() {
     const dt = this.dt;
     this.breathPhase += dt * 0.001 * this.profile.breathRate;
     this.input.update(0.3);
+
+    // Sync touch state to memory system
+    this.memory.isTouch = this.input.state.isTouch;
 
     // Refresh circadian every 60s
     this.circadianTimer += dt;
@@ -158,6 +253,32 @@ export class Organism {
       this.profile = getCircadianProfile();
       this.music.setScale(this.profile.scale);
       this.music.setMood(this.profile.musicMood);
+    }
+
+    // Process birth target releases (timestamp-based, replaces setTimeout)
+    for (let i = this.birthTargetReleases.length - 1; i >= 0; i--) {
+      const entry = this.birthTargetReleases[i];
+      if (this.time >= entry.releaseAt) {
+        entry.particle.targetX = null;
+        entry.particle.targetY = null;
+        entry.particle.targetForce = 0;
+        this.birthTargetReleases.splice(i, 1);
+      }
+    }
+
+    // Birth animation: stagger memory placement
+    if (this.birthPhase === "seed") {
+      this.birthTimer += dt;
+      if (this.birthTimer > 800) { // wait 800ms then start birthing
+        this.birthPhase = "blooming";
+        this.birthTimer = 0;
+      }
+    } else if (this.birthPhase === "blooming") {
+      this.birthTimer += dt;
+      if (this.birthTimer > 80) { // birth one every 80ms = ~2.5s for all 20
+        this.birthTimer = 0;
+        this._birthNextMemory();
+      }
     }
 
     // Bloom — spawn new particles on user interaction
@@ -169,11 +290,75 @@ export class Organism {
       }
     }
 
+    // Idle detection
+    if (this.input.state.active) {
+      this.idleTimer = 0;
+      this.isIdle = false;
+    } else {
+      this.idleTimer += dt;
+      if (this.idleTimer > 3000) {
+        this.isIdle = true;
+      }
+    }
+
+    // Idle respiration — emit ambient pulse particles
+    if (this.isIdle && this.memoriesPlaced) {
+      this.idlePulseTimer += dt;
+      if (this.idlePulseTimer > 2000 && this.pool.count < 300) {
+        this.idlePulseTimer = 0;
+        // Pick a random memory particle to pulse from (cached list, no allocation)
+        const memParticles = this._memoryParticles;
+        if (memParticles.length > 0) {
+          const mp = memParticles[Math.floor(Math.random() * memParticles.length)];
+          const angle = Math.random() * TWO_PI;
+          const speed = 0.3 + Math.random() * 0.5;
+          this.pool.add(mp.x, mp.y, {
+            generation: 1,
+            radius: 1 + Math.random() * 0.5,
+            hue: mp.hue,
+            saturation: mp.saturation,
+            lightness: mp.lightness + 10,
+            alpha: 0.3,
+            decay: 0.015,
+            maxTrail: this.profile.trailLength,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+          });
+        }
+      }
+    }
+
+    // Swipe scatter
+    if (this.input.state.isSwipe) {
+      const particles = this.pool.particles;
+      const svx = this.input.state.swipeVx * 0.3;
+      const svy = this.input.state.swipeVy * 0.3;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (!p.isMemory) {
+          p.addForce(svx * (0.5 + Math.random() * 0.5), svy * (0.5 + Math.random() * 0.5));
+        }
+      }
+      this.input.state.isSwipe = false;
+    }
+
+    // Pinch zoom
+    if (this.input.state.isPinching && this.input.state.pinchDelta !== 0) {
+      const delta = this.input.state.pinchDelta;
+      this.organismRadius = Math.max(
+        this.baseOrganismRadius * 0.5,
+        Math.min(this.baseOrganismRadius * 2.0, this.organismRadius + delta * 0.5)
+      );
+      // Pitch shift based on radius ratio
+      const ratio = this.organismRadius / this.baseOrganismRadius;
+      this.music.setPitchShift(1.0 / ratio); // smaller = higher pitch
+    }
+
     // Physics
     const particles = this.pool.particles;
     const cx = this.centerX;
     const cy = this.centerY;
-    const breath = Math.sin(this.breathPhase) * 0.3;
+    const breath = Math.sin(this.breathPhase) * (this.isIdle ? 0.5 : 0.3);
     const cohesionStrength = 0.0003;
     const separationDist = 18;
     const damping = 0.97;
@@ -192,7 +377,7 @@ export class Organism {
       // Cohesion: gentle pull toward center
       p.addForce(dx * cohesionStrength * speed, dy * cohesionStrength * speed);
 
-      // Breathing oscillation
+      // Breathing oscillation (stronger when idle)
       const breathForce = breath * 0.02;
       p.addForce(-dx / dist * breathForce, -dy / dist * breathForce);
 
@@ -223,7 +408,38 @@ export class Organism {
         }
       }
 
-      // Text formation targets
+      // Multi-touch membrane forces
+      if (this.input.state.touches.length >= 2 && !p.isMemory) {
+        const touches = this.input.state.touches;
+        for (let t = 0; t < touches.length - 1; t++) {
+          const t1 = touches[t];
+          const t2 = touches[t + 1];
+          // Attract particles to the line between touch points
+          const lx = t2.x - t1.x;
+          const ly = t2.y - t1.y;
+          const len = Math.sqrt(lx * lx + ly * ly) || 1;
+          // Project particle onto line
+          const px = p.x - t1.x;
+          const py = p.y - t1.y;
+          const proj = Math.max(0, Math.min(1, (px * lx + py * ly) / (len * len)));
+          const closestX = t1.x + lx * proj;
+          const closestY = t1.y + ly * proj;
+          const lineDist = Math.sqrt((p.x - closestX) ** 2 + (p.y - closestY) ** 2);
+          if (lineDist < 150 && lineDist > 5) {
+            const membraneForce = 0.002 * (1 - lineDist / 150);
+            p.addForce((closestX - p.x) * membraneForce, (closestY - p.y) * membraneForce);
+          }
+        }
+      }
+
+      // Gyroscope gravity
+      if (this.input.state.hasGyro) {
+        const gx = this.input.state.gyro.x * 0.15 * speed;
+        const gy = this.input.state.gyro.y * 0.15 * speed;
+        p.addForce(gx, gy);
+      }
+
+      // Text formation targets (with graceful release)
       if (p.targetX !== null && p.targetForce > 0) {
         const tx = p.targetX - p.x;
         const ty = p.targetY - p.y;
@@ -278,20 +494,45 @@ export class Organism {
         this.discoveredOverlay = node;
         this.overlayFade = 1.0;
 
-        // Text formation for this node's label
         this._formText(node.label);
 
-        // Notify React for HTML overlay
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       }
     }
 
-    // Fade overlay
+    // Graceful text release (fade targetForce over 500ms instead of snapping)
     if (this.overlayFade > 0) {
       this.overlayFade -= dt * 0.0003;
+      if (this.overlayFade <= 0.3 && this.textFormationActive) {
+        this._startGracefulRelease();
+      }
       if (this.overlayFade < 0) {
         this.overlayFade = 0;
+      }
+    }
+
+    // Decay text formation force during graceful release
+    if (this.textReleaseTimer > 0) {
+      this.textReleaseTimer -= dt;
+      const releasePct = Math.max(0, this.textReleaseTimer / 500);
+      for (const p of this.textFormationTargets) {
+        p.targetForce = 0.03 * releasePct;
+      }
+      if (this.textReleaseTimer <= 0) {
         this._releaseText();
+      }
+    }
+
+    // Update cursor trail
+    if (this.input.state.active) {
+      this.cursorTrail.unshift({ x: this.input.state.x, y: this.input.state.y });
+      if (this.cursorTrail.length > this.maxCursorTrail) {
+        this.cursorTrail.pop();
+      }
+    } else {
+      // Fade out cursor trail when inactive
+      if (this.cursorTrail.length > 0) {
+        this.cursorTrail.pop();
       }
     }
   }
@@ -310,7 +551,6 @@ export class Organism {
       const x = mx + Math.cos(angle) * r;
       const y = my + Math.sin(angle) * r;
 
-      // Color mutation per generation
       const hueShift = this.generation * 8;
       const h = (this.profile.primary.h + hueShift + Math.random() * 10) % 360;
 
@@ -335,16 +575,24 @@ export class Organism {
     const height = fontSize * 2;
     const positions = textToPositions(text, fontSize, width, height);
 
-    // Offset to center
     const offsetX = this.centerX - width / 2;
     const offsetY = this.centerY - height / 2 - 80;
 
-    // Assign nearest non-memory particles to text positions
-    const available = this.pool.particles.filter(p => !p.isMemory && p.targetX === null);
+    // Sort available particles by distance to text center for natural flow
+    const textCenterX = this.centerX;
+    const textCenterY = offsetY + height / 2;
+    const available = this.pool.particles
+      .filter(p => !p.isMemory && p.targetX === null)
+      .sort((a, b) => {
+        const da = (a.x - textCenterX) ** 2 + (a.y - textCenterY) ** 2;
+        const db = (b.x - textCenterX) ** 2 + (b.y - textCenterY) ** 2;
+        return da - db;
+      });
     const usable = Math.min(available.length, positions.length);
 
     this.textFormationActive = true;
     this.textFormationTargets = [];
+    this.textReleaseTimer = 0;
 
     for (let i = 0; i < usable; i++) {
       const p = available[i];
@@ -355,8 +603,14 @@ export class Organism {
     }
   }
 
-  _releaseText() {
+  _startGracefulRelease() {
+    if (!this.textFormationActive) return;
     this.textFormationActive = false;
+    this.textReleaseTimer = 500; // 500ms graceful release
+  }
+
+  _releaseText() {
+    this.textReleaseTimer = 0;
     for (const p of this.textFormationTargets) {
       p.targetX = null;
       p.targetY = null;
@@ -370,14 +624,12 @@ export class Organism {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    // First frame: full opaque clear to prevent artifacts
     const [br, bg, bb] = this.profile.bg;
     if (this.firstFrame) {
       ctx.fillStyle = `rgb(${br}, ${bg}, ${bb})`;
       ctx.fillRect(0, 0, w, h);
       this.firstFrame = false;
     } else {
-      // Subsequent frames: subtle fade for trail effect
       ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, 0.15)`;
       ctx.fillRect(0, 0, w, h);
     }
@@ -409,7 +661,6 @@ export class Organism {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // Flowing particles along connection
       const streamCount = 5;
       for (let i = 0; i < streamCount; i++) {
         const t = ((progress * 3 + i / streamCount) % 1);
@@ -424,6 +675,8 @@ export class Organism {
 
     // Draw particles
     const particles = this.pool.particles;
+    const glowSprite = this._glowSprite;
+
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
 
@@ -439,13 +692,21 @@ export class Organism {
         ctx.stroke();
       }
 
-      // Glow
-      const glowSize = p.radius * (p.isMemory ? 6 : 3);
-      const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-      particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
-      particleGlow.addColorStop(1, "transparent");
-      ctx.fillStyle = particleGlow;
-      ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+      // Glow — use sprite for non-memory, dynamic gradient for memory
+      if (p.isMemory) {
+        const glowSize = p.radius * 6;
+        const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+        particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
+        particleGlow.addColorStop(1, "transparent");
+        ctx.fillStyle = particleGlow;
+        ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+      } else if (glowSprite) {
+        // Pre-rendered sprite glow
+        const spriteSize = p.radius * 3;
+        ctx.globalAlpha = p.alpha * p.life * 0.3;
+        ctx.drawImage(glowSprite, p.x - spriteSize, p.y - spriteSize, spriteSize * 2, spriteSize * 2);
+        ctx.globalAlpha = 1;
+      }
 
       // Core
       const breathScale = p.isMemory ? 1 + Math.sin(p.breathPhase + this.breathPhase * 3) * 0.15 : 1;
@@ -455,43 +716,61 @@ export class Organism {
       ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 15}%, ${p.alpha * p.life})`;
       ctx.fill();
 
-      // Memory indicator — subtle ring
+      // Memory indicator
       if (p.isMemory) {
         const node = this.memory.nodes.get(p.memoryId);
-        const ringAlpha = node?.discovered ? 0.6 : 0.2;
+
+        if (node?.discovered) {
+          // Discovered: solid ring
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 2.5, 0, TWO_PI);
+          ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0.6)`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        } else if (node) {
+          // Undiscovered: pulsing ring (subtle invitation to explore)
+          const pulseAlpha = 0.1 + Math.sin(node.pulsePhase) * 0.1;
+          const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pulseRadius, 0, TWO_PI);
+          ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${pulseAlpha})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Custom cursor glow (renders at raw position for immediate feedback)
+    if (this.input.state.active && !this.input.state.isTouch) {
+      const cx = this.input.state.x;
+      const cy = this.input.state.y;
+
+      // Cursor trail
+      if (this.cursorTrail.length > 1) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius * 2.5, 0, TWO_PI);
-        ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${ringAlpha})`;
-        ctx.lineWidth = 0.5;
+        ctx.moveTo(this.cursorTrail[0].x, this.cursorTrail[0].y);
+        for (let t = 1; t < this.cursorTrail.length; t++) {
+          ctx.lineTo(this.cursorTrail[t].x, this.cursorTrail[t].y);
+        }
+        ctx.strokeStyle = `hsla(${this.profile.primary.h}, 80%, 70%, 0.15)`;
+        ctx.lineWidth = 2;
         ctx.stroke();
       }
 
-      // Label for memory particles when discovered or hovered
-      if (p.isMemory && p.memoryId) {
-        const node = this.memory.nodes.get(p.memoryId);
-        if (node && (node.discovered || this.memory.dwellTarget === p.memoryId)) {
-          const labelAlpha = node.discovered ? 0.8 : Math.min(this.memory.dwellTime / 800, 1) * 0.5;
-          ctx.font = `${p.memoryId === "root" ? 14 : 11}px "Space Grotesk", sans-serif`;
-          ctx.textAlign = "center";
-          ctx.fillStyle = `hsla(0, 0%, 92%, ${labelAlpha})`;
-          ctx.fillText(node.label, p.x, p.y - p.radius * 3 - 4);
+      // Cursor dot
+      const cursorBreath = 1 + Math.sin(this.breathPhase * 2) * 0.2;
+      const cursorR = 4 * cursorBreath;
+      const cursorGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cursorR * 4);
+      cursorGlow.addColorStop(0, `hsla(${this.profile.primary.h}, 80%, 80%, 0.6)`);
+      cursorGlow.addColorStop(0.5, `hsla(${this.profile.primary.h}, 70%, 60%, 0.15)`);
+      cursorGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = cursorGlow;
+      ctx.fillRect(cx - cursorR * 4, cy - cursorR * 4, cursorR * 8, cursorR * 8);
 
-          // Show description if discovered
-          if (node.discovered && node.desc) {
-            ctx.font = `10px "Space Grotesk", sans-serif`;
-            ctx.fillStyle = `hsla(0, 0%, 70%, ${labelAlpha * 0.7})`;
-            ctx.fillText(node.desc, p.x, p.y - p.radius * 3 + 12);
-          }
-
-          // Show URL if discovered
-          if (node.discovered && node.url) {
-            ctx.font = `9px "IBM Plex Mono", monospace`;
-            ctx.fillStyle = `hsla(${this.profile.primary.h}, 70%, 60%, ${labelAlpha * 0.6})`;
-            const displayUrl = node.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-            ctx.fillText(displayUrl, p.x, p.y - p.radius * 3 + 26);
-          }
-        }
-      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, cursorR, 0, TWO_PI);
+      ctx.fillStyle = `hsla(${this.profile.primary.h}, 80%, 85%, 0.7)`;
+      ctx.fill();
     }
 
     // Discovered content overlay (bottom of screen)
@@ -514,23 +793,23 @@ export class Organism {
 
   _handleKeyboard(e) {
     const memIds = this.memoryIds;
-    if (e.key === "Tab") {
+
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      if (e.shiftKey) {
-        this.focusedMemoryIndex = (this.focusedMemoryIndex - 1 + memIds.length) % memIds.length;
+      if (this.focusedMemoryIndex < 0) {
+        this.focusedMemoryIndex = 0;
       } else {
         this.focusedMemoryIndex = (this.focusedMemoryIndex + 1) % memIds.length;
       }
-      // Move cursor to focused memory particle
-      const id = memIds[this.focusedMemoryIndex];
-      const node = this.memory.nodes.get(id);
-      if (node?.particle) {
-        this.input.state.px = node.particle.x;
-        this.input.state.py = node.particle.y;
-        this.input.state.x = node.particle.x;
-        this.input.state.y = node.particle.y;
-        this.input.state.active = true;
+      this._focusMemory(memIds[this.focusedMemoryIndex]);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (this.focusedMemoryIndex < 0) {
+        this.focusedMemoryIndex = memIds.length - 1;
+      } else {
+        this.focusedMemoryIndex = (this.focusedMemoryIndex - 1 + memIds.length) % memIds.length;
       }
+      this._focusMemory(memIds[this.focusedMemoryIndex]);
     } else if (e.key === "Enter" && this.focusedMemoryIndex >= 0) {
       const id = memIds[this.focusedMemoryIndex];
       const node = this.memory.nodes.get(id);
@@ -544,49 +823,26 @@ export class Organism {
           this.overlayFade = 1.0;
           this._formText(node.label);
         }
-        // Notify callback for React overlay
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       } else if (node?.discovered && node?.url) {
         window.open(node.url, "_blank", "noopener,noreferrer");
       }
-    } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      if (this.focusedMemoryIndex < 0) {
-        this.focusedMemoryIndex = 0;
-      } else {
-        this.focusedMemoryIndex = (this.focusedMemoryIndex + 1) % memIds.length;
-      }
-      const id = memIds[this.focusedMemoryIndex];
-      const node = this.memory.nodes.get(id);
-      if (node?.particle) {
-        this.input.state.px = node.particle.x;
-        this.input.state.py = node.particle.y;
-        this.input.state.x = node.particle.x;
-        this.input.state.y = node.particle.y;
-        this.input.state.active = true;
-      }
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      if (this.focusedMemoryIndex < 0) {
-        this.focusedMemoryIndex = memIds.length - 1;
-      } else {
-        this.focusedMemoryIndex = (this.focusedMemoryIndex - 1 + memIds.length) % memIds.length;
-      }
-      const id = memIds[this.focusedMemoryIndex];
-      const node = this.memory.nodes.get(id);
-      if (node?.particle) {
-        this.input.state.px = node.particle.x;
-        this.input.state.py = node.particle.y;
-        this.input.state.x = node.particle.x;
-        this.input.state.y = node.particle.y;
-        this.input.state.active = true;
-      }
-    } else if (e.key === " ") {
-      // Space handled by React audio toggle
+    }
+    // Space for audio toggle is handled by React
+  }
+
+  _focusMemory(id) {
+    const node = this.memory.nodes.get(id);
+    if (node?.particle) {
+      this.input.state.px = node.particle.x;
+      this.input.state.py = node.particle.y;
+      this.input.state.x = node.particle.x;
+      this.input.state.y = node.particle.y;
+      this.input.state.active = true;
     }
   }
 
-  /* Returns discovered memory nodes with their current screen positions for HTML overlay */
+  /* Returns discovered memory nodes with their current screen positions */
   getDiscoveredPositions() {
     const result = [];
     for (const [id, node] of this.memory.nodes) {
@@ -630,7 +886,7 @@ export class Organism {
     this.stop();
     this.input.destroy();
     this.music.destroy();
-    window.removeEventListener("resize", this._resize);
-    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("resize", this._boundResize);
+    window.removeEventListener("keydown", this._boundKeyDown);
   }
 }
