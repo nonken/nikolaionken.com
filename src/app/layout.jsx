@@ -1,17 +1,16 @@
-import { PT_Serif, PT_Sans } from "next/font/google";
-import Link from "next/link";
+import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const ptSerif = PT_Serif({
-  variable: "--font-pt-serif",
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "700"],
 });
 
-const ptSans = PT_Sans({
-  variable: "--font-pt-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "700"],
 });
 
 export const metadata = {
@@ -19,11 +18,13 @@ export const metadata = {
     default: "nikolaionken.com",
     template: "%s | nikolaionken.com",
   },
-  description: "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
+  description:
+    "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
   metadataBase: new URL("https://nikolaionken.com"),
   openGraph: {
     title: "nikolaionken.com",
-    description: "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
+    description:
+      "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.",
     url: "https://nikolaionken.com",
     siteName: "nikolaionken.com",
     type: "website",
@@ -33,36 +34,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${ptSerif.variable} ${ptSans.variable}`}>
-        <div className="paper">
-          {/* Registration marks — like a printer's proof sheet */}
-          <span className="corner-mark corner-mark--tl" />
-          <span className="corner-mark corner-mark--tr" />
-          <span className="corner-mark corner-mark--bl" />
-          <span className="corner-mark corner-mark--br" />
-
-          <header className="navigation-wrapper">
-            <div className="site-name">
-              <Link href="/">nikolaionken.com</Link>
-            </div>
-            <nav className="top-navigation">
-              <ul>
-                <li>
-                  <Link href="/about">About</Link>
-                </li>
-              </ul>
-            </nav>
-          </header>
-
-          <main id="main" role="main">
-            {children}
-          </main>
-
-          <footer className="footer-wrap">
-            <p className="footer-tagline">Code &middot; Build &middot; Create &middot; Explore</p>
-            <h6>&copy; {new Date().getFullYear()} Nikolai Onken</h6>
-          </footer>
-        </div>
+      <body className={`${plexMono.variable} ${spaceGrotesk.variable}`}>
+        {children}
       </body>
     </html>
   );
