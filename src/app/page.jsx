@@ -203,7 +203,7 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const typewriterRef = useRef(null);
   const audioRef = useRef(null);
-  const [audioOn, setAudioOn] = useState(true);
+  const [audioOn, setAudioOn] = useState(false);
 
   useEffect(() => {
     const cleanupParallax = initParallax();
@@ -226,6 +226,7 @@ export default function Home() {
       if (!audioRef.current) {
         audioRef.current = initAudio();
         audioRef.current.toggle(); // enable immediately
+        setAudioOn(true);
       }
       document.removeEventListener("click", startAudio);
       document.removeEventListener("keydown", startAudio);
