@@ -47,7 +47,7 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
-   CANVAS — the living organism
+   CANVAS — the living constellation
    ═══════════════════════════════════════════ */
 .organism-canvas {
   position: fixed;
@@ -59,78 +59,7 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
-   INTRO — typewriter + first breath
-   ═══════════════════════════════════════════ */
-.intro {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--void);
-  transition: opacity 1.2s ease, visibility 1.2s;
-}
-
-.intro--done {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.intro__content {
-  display: flex;
-  align-items: center;
-}
-
-.intro__text {
-  font-family: var(--font-family-mono);
-  font-size: clamp(1.2rem, 4vw, 2.5rem);
-  color: var(--text);
-  letter-spacing: 0.06em;
-}
-
-.intro__cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1.1em;
-  background: var(--glow);
-  margin-left: 4px;
-  vertical-align: text-bottom;
-  animation: cursorBlink 0.8s step-end infinite;
-}
-
-@keyframes cursorBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-/* First breath animation — a single particle pulse */
-.intro__breath {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--glow);
-  margin-top: 3rem;
-  animation: firstBreath 1.2s ease-in-out;
-  box-shadow: 0 0 20px rgba(78, 205, 196, 0.4), 0 0 60px rgba(78, 205, 196, 0.15);
-}
-
-@keyframes firstBreath {
-  0% { transform: scale(0); opacity: 0; }
-  30% { transform: scale(1.5); opacity: 1; }
-  60% { transform: scale(0.8); opacity: 0.8; }
-  100% { transform: scale(1.2); opacity: 0.6; }
-}
-
-.intro--breathing .intro__cursor {
-  animation: none;
-  opacity: 0.3;
-}
-
-/* ═══════════════════════════════════════════
-   AUDIO TOGGLE
+   AUDIO TOGGLE — cosmic integrated style
    ═══════════════════════════════════════════ */
 .audio-toggle-wrap {
   position: fixed;
@@ -140,36 +69,38 @@ a:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  opacity: 0;
+  animation: fadeInSlow 1.5s ease forwards;
 }
 
 .audio-toggle {
   font-family: var(--font-family-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-dim);
-  background: rgba(10, 10, 15, 0.6);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  padding: 0.4rem 0.8rem;
+  background: rgba(10, 10, 15, 0.4);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  padding: 0.35rem 0.7rem;
   cursor: pointer;
   transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .audio-toggle__icon {
-  margin-right: 0.3rem;
+  margin-right: 0.25rem;
 }
 
 .audio-toggle:hover {
   color: var(--glow);
-  border-color: rgba(78, 205, 196, 0.2);
+  border-color: rgba(78, 205, 196, 0.15);
 }
 
 .audio-toggle--active {
   color: var(--glow);
-  border-color: rgba(78, 205, 196, 0.3);
+  border-color: rgba(78, 205, 196, 0.2);
   animation: audioGlow 3s ease-in-out infinite;
 }
 
@@ -179,25 +110,30 @@ a:focus-visible {
 
 .audio-toggle__hint {
   font-family: var(--font-family-mono);
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   color: var(--glow);
-  opacity: 0.7;
+  opacity: 0.6;
   animation: hintFadeIn 0.5s ease-out;
   white-space: nowrap;
 }
 
 @keyframes audioPulse {
   0%, 100% { box-shadow: 0 0 0 rgba(78, 205, 196, 0); }
-  50% { box-shadow: 0 0 12px rgba(78, 205, 196, 0.4); border-color: rgba(78, 205, 196, 0.4); color: var(--glow); }
+  50% { box-shadow: 0 0 12px rgba(78, 205, 196, 0.3); border-color: rgba(78, 205, 196, 0.3); color: var(--glow); }
 }
 
 @keyframes audioGlow {
-  0%, 100% { box-shadow: 0 0 4px rgba(78, 205, 196, 0.1); }
-  50% { box-shadow: 0 0 8px rgba(78, 205, 196, 0.2); }
+  0%, 100% { box-shadow: 0 0 4px rgba(78, 205, 196, 0.08); }
+  50% { box-shadow: 0 0 8px rgba(78, 205, 196, 0.15); }
+}
+
+@keyframes fadeInSlow {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════
-   FOOTER
+   FOOTER — satellite orbital style
    ═══════════════════════════════════════════ */
 .footer {
   position: fixed;
@@ -205,13 +141,19 @@ a:focus-visible {
   left: 1.5rem;
   z-index: 50;
   font-family: var(--font-family-mono);
-  font-size: 0.55rem;
-  letter-spacing: 0.1em;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.footer:hover {
+  opacity: 0.8;
 }
 
 .footer__text-link {
@@ -226,7 +168,7 @@ a:focus-visible {
 
 .footer__discovery-count {
   color: var(--glow);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* ═══════════════════════════════════════════
@@ -239,22 +181,22 @@ a:focus-visible {
   transform: translateX(-50%);
   z-index: 20;
   font-family: var(--font-family-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
   color: var(--text-muted);
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: opacity 1.5s ease;
   pointer-events: none;
   white-space: nowrap;
 }
 
 .discovery-hint--visible {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 @keyframes hintFadeIn {
   from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 0.7; transform: translateY(0); }
+  to { opacity: 0.6; transform: translateY(0); }
 }
 
 /* ═══════════════════════════════════════════
@@ -272,38 +214,38 @@ a:focus-visible {
 .memory-label__name {
   display: block;
   font-family: var(--font-family-sans);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 500;
-  color: rgba(232, 232, 232, 0.8);
-  letter-spacing: 0.02em;
+  color: rgba(232, 232, 232, 0.75);
+  letter-spacing: 0.03em;
 }
 
 .memory-label__desc {
   display: block;
   font-family: var(--font-family-sans);
-  font-size: 0.55rem;
-  color: rgba(180, 180, 180, 0.55);
+  font-size: 0.5rem;
+  color: rgba(180, 180, 180, 0.45);
   margin-top: 1px;
 }
 
 /* ═══════════════════════════════════════════
-   MEMORY LINKS — clickable overlays for discovered nodes
+   MEMORY LINKS — clickable overlays
    ═══════════════════════════════════════════ */
 .memory-link {
   position: fixed;
   z-index: 10;
   transform: translateX(-50%);
   font-family: var(--font-family-mono);
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   letter-spacing: 0.04em;
   color: var(--glow);
-  opacity: 0.85;
-  padding: 8px 14px;
-  border-radius: 6px;
-  background: rgba(10, 10, 15, 0.7);
+  opacity: 0.7;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: rgba(10, 10, 15, 0.5);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(78, 205, 196, 0.15);
+  border: 1px solid rgba(78, 205, 196, 0.1);
   transition: opacity 0.3s, background 0.3s, border-color 0.3s, transform 0.2s;
   pointer-events: auto;
   white-space: nowrap;
@@ -312,10 +254,10 @@ a:focus-visible {
 
 .memory-link:hover {
   opacity: 1;
-  background: rgba(78, 205, 196, 0.12);
-  border-color: rgba(78, 205, 196, 0.4);
+  background: rgba(78, 205, 196, 0.1);
+  border-color: rgba(78, 205, 196, 0.3);
   color: #fff;
-  transform: translateX(-50%) scale(1.04);
+  transform: translateX(-50%) scale(1.03);
 }
 
 .memory-link:focus-visible {
@@ -446,25 +388,25 @@ body:has(.text-page) {
   }
 
   .audio-toggle {
-    font-size: 0.65rem;
+    font-size: 0.55rem;
   }
 
   .footer {
     bottom: 1rem;
     left: 1rem;
-    font-size: 0.5rem;
+    font-size: 0.45rem;
   }
 
   .memory-label__name {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
   }
 
   .memory-label__desc {
-    font-size: 0.5rem;
+    font-size: 0.45rem;
   }
 
   .memory-link {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     padding: 10px 14px;
     min-height: 44px;
     min-width: 44px;
@@ -473,7 +415,7 @@ body:has(.text-page) {
   }
 
   .discovery-hint {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     bottom: 3.5rem;
   }
 

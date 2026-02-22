@@ -3,7 +3,7 @@
 /*
  * Particle system with Verlet integration and spatial hashing.
  * Each particle stores current + previous position for implicit velocity.
- * Optimized: numeric hash keys, pre-rendered glow sprites.
+ * Optimized: numeric hash keys, pre-rendered glow sprites, star field layer.
  */
 
 const CELL_SIZE = 40;
@@ -18,7 +18,6 @@ export class SpatialHash {
   }
 
   _key(x, y) {
-    // Numeric key via XOR avoids string allocation and minimizes collisions
     const cx = (x / CELL_SIZE) | 0;
     const cy = (y / CELL_SIZE) | 0;
     return (cx * 73856093) ^ (cy * 19349669);
@@ -170,4 +169,61 @@ export function getGlowSprite(size) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, s, s);
   return _glowCanvas;
+}
+
+/*
+ * Star field — pre-rendered background layer.
+ * Drawn once to an offscreen canvas, composited each frame.
+ * Twinkle is achieved by redrawing periodically with sine-shifted alphas.
+ */
+export class StarField {
+  constructor(w, h, count = 250) {
+    this.stars = [];
+    this.canvas = null;
+    this.w = 0;
+    this.h = 0;
+    this.phase = 0;
+    this._generate(w, h, count);
+  }
+
+  _generate(w, h, count) {
+    this.w = w;
+    this.h = h;
+    this.stars = [];
+    for (let i = 0; i < count; i++) {
+      this.stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 0.3 + Math.random() * 0.8,
+        baseAlpha: 0.15 + Math.random() * 0.35,
+        twinkleSpeed: 0.5 + Math.random() * 2.0,
+        twinkleOffset: Math.random() * Math.PI * 2,
+      });
+    }
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = w;
+    this.canvas.height = h;
+  }
+
+  resize(w, h) {
+    if (w === this.w && h === this.h) return;
+    this._generate(w, h, this.stars.length || 250);
+  }
+
+  render(phase) {
+    this.phase = phase;
+    const ctx = this.canvas.getContext("2d");
+    ctx.clearRect(0, 0, this.w, this.h);
+    for (let i = 0; i < this.stars.length; i++) {
+      const s = this.stars[i];
+      const twinkle = Math.sin(phase * s.twinkleSpeed + s.twinkleOffset);
+      const alpha = s.baseAlpha + twinkle * 0.15;
+      if (alpha <= 0) continue;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,210,220,${Math.min(1, alpha)})`;
+      ctx.fill();
+    }
+    return this.canvas;
+  }
 }
