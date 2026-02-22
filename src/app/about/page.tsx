@@ -43,14 +43,11 @@ export default function AboutPage() {
         </li>
         <li>
           <a href="https://aws.amazon.com/cloud9/">AWS (Cloud9)</a>{" "}
-          <em>Site lead, Amsterdam</em>
+          <em>Established the Amsterdam office, leading the Cloud9 product</em>
         </li>
         <li>
           <a href="https://c9.io">Cloud9 IDE</a>{" "}
-          <em>
-            Site lead &mdash; established the Amsterdam office. Acquired by AWS
-            in 2016
-          </em>
+          <em>VP Engineering &mdash; Acquired by AWS in 2016</em>
         </li>
         <li>
           <a href="https://nangu.eco/">Nangu.eco</a>{" "}
