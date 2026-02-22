@@ -1,14 +1,4 @@
-export interface Post {
-  slug: string;
-  title: string;
-  date: string;
-  categories: string[];
-  content: string;
-  description?: string;
-  draft?: boolean;
-}
-
-export const posts: Post[] = [
+export const posts = [
   {
     slug: "cloud-privacy-will-be-the-new-organic-food",
     title: "Cloud privacy will be the new organic food",
@@ -94,16 +84,16 @@ startups are trying change the status quo.`,
   },
 ];
 
-export function getPostBySlug(slug: string): Post | undefined {
+export function getPostBySlug(slug) {
   return posts.find((p) => p.slug === slug);
 }
 
-export function getAllPosts(): Post[] {
+export function getAllPosts() {
   return [...posts].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 }
 
-export function getPublishedPosts(): Post[] {
+export function getPublishedPosts() {
   return getAllPosts().filter((p) => !p.draft);
 }
