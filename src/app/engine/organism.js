@@ -1,14 +1,15 @@
 "use client";
 
-import { ParticlePool, getGlowSprite } from "./particles.js";
+import { ParticlePool, getGlowSprite, StarField } from "./particles.js";
 import { MemorySystem, MEMORIES, textToPositions, stringToMelody } from "./memory.js";
 import { createInputHandler } from "./input.js";
 import { getCircadianProfile } from "./circadian.js";
 import { MusicEngine } from "./music.js";
 
 /*
- * The Organism — core simulation that unifies particles, music, and content.
- * A single living entity that breathes, responds, and reveals.
+ * The Organism — "Constellation" design.
+ * Full-screen living star map with parallax depth, dramatic discovery,
+ * and edge-to-edge visual presence.
  */
 
 const GOLDEN_ANGLE = 137.508 * (Math.PI / 180);
@@ -33,7 +34,8 @@ export class Organism {
     this.breathPhase = 0;
     this.centerX = canvas.width / 2;
     this.centerY = canvas.height / 2;
-    this.organismRadius = Math.min(canvas.width, canvas.height) * 0.25;
+    // Constellation uses much larger radius — fills 90% of screen
+    this.organismRadius = Math.min(canvas.width, canvas.height) * 0.42;
     this.baseOrganismRadius = this.organismRadius;
     this.running = false;
     this.lastFrame = 0;
@@ -43,33 +45,38 @@ export class Organism {
     this.overlayFade = 0;
     this.textFormationTargets = [];
     this.textFormationActive = false;
-    this.textReleaseTimer = 0; // for graceful text release
+    this.textReleaseTimer = 0;
     this.firstFrame = true;
 
-    // Birth animation state
-    this.birthPhase = "seed"; // seed | blooming | alive
-    this.birthTimer = 0;
-    this.birthIndex = 0; // next memory to birth
-    this.memoriesPlaced = false;
-    // Particles with pending target release (timestamp-based, no setTimeout)
-    this.birthTargetReleases = []; // { particle, releaseAt }
+    // Intro sequence state: genesis | burst | coalesce | nameform | namehold | ready
+    this.introPhase = "genesis";
+    this.introTimer = 0;
+    this.introParticles = []; // particles spawned during burst
+    this.introNameTimer = 0;
 
-    // Idle respiration state
+    // Birth animation state (post-intro)
+    this.birthPhase = "waiting"; // waiting | blooming | alive
+    this.birthTimer = 0;
+    this.birthIndex = 0;
+    this.memoriesPlaced = false;
+    this.birthTargetReleases = [];
+
+    // Idle respiration
     this.idleTimer = 0;
     this.idlePulseTimer = 0;
     this.isIdle = false;
 
-    // Cached memory particle list (only changes during birth phase)
+    // Cached memory particle list
     this._memoryParticles = [];
 
-    // Adaptive quality — circular buffer avoids O(n) shift
+    // Adaptive quality
     this._ftSamples = new Float64Array(60);
     this._ftIndex = 0;
     this._ftCount = 0;
-    this.qualityLevel = 1.0; // 1.0 = full, 0.75 = reduced
+    this.qualityLevel = 1.0;
     this.useGlowSprites = true;
 
-    // Cursor glow trail
+    // Cursor trail
     this.cursorTrail = [];
     this.maxCursorTrail = 12;
 
@@ -82,6 +89,19 @@ export class Organism {
     // Circadian refresh timer
     this.circadianTimer = 0;
 
+    // Star field (background layer)
+    this.starField = null; // initialized on first resize
+
+    // Parallax offset (updated per frame based on cursor)
+    this.parallaxX = 0;
+    this.parallaxY = 0;
+
+    // Corona rotation for root node
+    this.coronaAngle = 0;
+
+    // Discovery progress ring
+    this.progressAngle = 0;
+
     // Touch burst callback
     this.input.state.onTouchBurst = (x, y) => this._touchBurst(x, y);
 
@@ -89,10 +109,7 @@ export class Organism {
     window.addEventListener("resize", this._boundResize, { passive: true });
     this._onResize();
 
-    // Pre-render glow sprite
     this._glowSprite = null;
-
-    // Bind loop once (avoid creating new function every frame)
     this._boundLoop = this._loop.bind(this);
   }
 
@@ -107,12 +124,20 @@ export class Organism {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.centerX = w / 2;
     this.centerY = h / 2;
-    this.baseOrganismRadius = Math.min(w, h) * 0.25;
+    this.baseOrganismRadius = Math.min(w, h) * 0.42;
     this.organismRadius = this.baseOrganismRadius;
-    // Recompute anchors on resize
-    if (this.memory && this.memory.discovered.size > 0) {
+
+    // Star field
+    if (this.starField) {
+      this.starField.resize(w, h);
+    } else {
+      this.starField = new StarField(w, h, 280);
+    }
+
+    // Recompute anchors
+    if (this.memory && this.memoriesPlaced) {
       const rx = this.organismRadius * 0.9;
-      const ry = this.organismRadius * 0.7;
+      const ry = this.organismRadius * 0.75;
       this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
     }
   }
@@ -122,75 +147,141 @@ export class Organism {
     this.running = true;
     this.lastFrame = performance.now();
 
-    // Only spawn seed particle — memories birth later via animation
-    this._spawnSeed();
-
     this.music.setScale(this.profile.scale);
     this.music.setMood(this.profile.musicMood);
 
-    // Initialize glow sprite
     this._glowSprite = getGlowSprite(16);
+
+    // Don't spawn seed particle yet — intro sequence handles it
+    this.introPhase = "genesis";
+    this.introTimer = 0;
 
     this.rafId = requestAnimationFrame(this._boundLoop);
   }
 
-  _spawnSeed() {
-    this.pool.add(this.centerX, this.centerY, {
-      generation: 0,
-      radius: 3,
-      hue: this.profile.primary.h,
-      saturation: this.profile.primary.s,
-      lightness: this.profile.primary.l,
-      alpha: 1.0,
-      maxTrail: this.profile.trailLength,
-    });
+  // ── Intro Sequence ───────────────────────────────────────
+
+  _updateIntro(dt) {
+    this.introTimer += dt;
+
+    if (this.introPhase === "genesis") {
+      // 0-1.5s: single point of light grows at center
+      if (this.introTimer > 1500) {
+        this.introPhase = "burst";
+        this.introTimer = 0;
+        this._introBurst();
+      }
+    } else if (this.introPhase === "burst") {
+      // 1.5-3.5s: particles expand outward filling screen
+      if (this.introTimer > 2000) {
+        this.introPhase = "coalesce";
+        this.introTimer = 0;
+      }
+    } else if (this.introPhase === "coalesce") {
+      // 3.5-5.5s: particles start gravitating to their constellation positions
+      // Start birthing memory particles
+      if (this.birthPhase === "waiting") {
+        this.birthPhase = "blooming";
+        this.birthTimer = 0;
+      }
+      if (this.introTimer > 2000) {
+        this.introPhase = "nameform";
+        this.introTimer = 0;
+        this._formText("nikolai onken");
+      }
+    } else if (this.introPhase === "nameform") {
+      // 5.5-7s: name forms from particles
+      if (this.introTimer > 1500) {
+        this.introPhase = "namehold";
+        this.introTimer = 0;
+      }
+    } else if (this.introPhase === "namehold") {
+      // 7-8s: hold name briefly, then release
+      if (this.introTimer > 1000) {
+        this.introPhase = "ready";
+        this.introTimer = 0;
+        if (this.textFormationActive) this._startGracefulRelease();
+        if (this._onIntroComplete) this._onIntroComplete();
+      }
+    }
   }
+
+  _introBurst() {
+    // Big Bang — spawn 80 particles radiating outward from center
+    const count = 80;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * TWO_PI + Math.random() * 0.3;
+      const speed = 3 + Math.random() * 6;
+      const dist = Math.random() * 10;
+      const x = this.centerX + Math.cos(angle) * dist;
+      const y = this.centerY + Math.sin(angle) * dist;
+      const hueShift = Math.random() * 30;
+      const p = this.pool.add(x, y, {
+        generation: 1,
+        radius: 1 + Math.random() * 2,
+        hue: (this.profile.primary.h + hueShift) % 360,
+        saturation: this.profile.primary.s,
+        lightness: this.profile.primary.l + Math.random() * 20,
+        alpha: 0.6 + Math.random() * 0.3,
+        decay: 0.008 + Math.random() * 0.005,
+        maxTrail: this.profile.trailLength,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+      });
+      if (p) this.introParticles.push(p);
+    }
+  }
+
+  // ── Birth ───────────────────────────────────────────────
 
   _birthNextMemory() {
     if (this.birthIndex >= MEMORIES.length) {
       this.birthPhase = "alive";
       this.memoriesPlaced = true;
+      // Compute constellation layout now that all memories exist
+      const rx = this.organismRadius * 0.9;
+      const ry = this.organismRadius * 0.75;
+      this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
       return;
     }
 
     const i = this.birthIndex;
-    const count = MEMORIES.length;
-    const angle = i * GOLDEN_ANGLE;
-    const r = this.organismRadius * 0.3 + (i / count) * this.organismRadius * 0.7;
-    // Birth from center, target position on spiral
-    const targetX = this.centerX + Math.cos(angle) * r;
-    const targetY = this.centerY + Math.sin(angle) * r;
-
     const mem = MEMORIES[i];
-    const hue = mem.type === "identity" ? 0 :
+
+    // Use the pre-computed constellation positions
+    const node = this.memory.nodes.get(mem.id);
+    // Compute a temporary target for birth animation
+    const rx = this.organismRadius * 0.9;
+    const ry = this.organismRadius * 0.75;
+    this.memory.computeConstellationLayout(this.centerX, this.centerY, rx, ry);
+
+    const targetX = node.anchorX || this.centerX;
+    const targetY = node.anchorY || this.centerY;
+
+    const hue = mem.type === "identity" ? (this.profile.primary.h + 40) % 360 :
                 mem.type === "root" ? this.profile.accent.h :
                 this.profile.primary.h;
-    const sat = mem.type === "identity" ? 65 : this.profile.primary.s;
-    const light = mem.type === "root" ? 85 : mem.type === "identity" ? 60 : this.profile.primary.l;
+    const sat = mem.type === "identity" ? 50 : this.profile.primary.s;
+    const light = mem.type === "root" ? 85 : mem.type === "identity" ? 55 : this.profile.primary.l;
 
-    // Spawn at center, will drift to target
     const p = this.pool.add(this.centerX, this.centerY, {
       generation: 0,
-      radius: mem.type === "root" ? 5 : 3.5,
+      radius: mem.type === "root" ? 5 : mem.type === "identity" ? 4 : 3.5,
       mass: 3,
       hue,
       saturation: sat,
       lightness: light,
       alpha: 0.95,
       maxTrail: 3,
-      // Small initial velocity toward target
-      vx: (targetX - this.centerX) * 0.015,
-      vy: (targetY - this.centerY) * 0.015,
+      vx: (targetX - this.centerX) * 0.012,
+      vy: (targetY - this.centerY) * 0.012,
     });
     if (p) {
       this.memory.assignParticle(mem.id, p);
-      // Set temporary target to guide particle to spiral position
       p.targetX = targetX;
       p.targetY = targetY;
       p.targetForce = 0.008;
-      // Schedule target release via update loop (no setTimeout — safe on destroy)
-      this.birthTargetReleases.push({ particle: p, releaseAt: this.time + 2000 });
-      // Cache memory particle reference
+      this.birthTargetReleases.push({ particle: p, releaseAt: this.time + 2500 });
       this._memoryParticles.push(p);
     }
 
@@ -198,7 +289,6 @@ export class Organism {
   }
 
   _touchBurst(x, y) {
-    // Spawn small burst of particles at touch point
     const count = 6;
     for (let i = 0; i < count; i++) {
       const angle = (i / count) * TWO_PI;
@@ -218,23 +308,24 @@ export class Organism {
     }
   }
 
+  // ── Main Loop ──────────────────────────────────────────
+
   _loop(ts) {
     if (!this.running) return;
     this.dt = Math.min(ts - this.lastFrame, 50);
     this.lastFrame = ts;
     this.time += this.dt;
 
-    // Adaptive quality monitoring — circular buffer (O(1) per frame)
+    // Adaptive quality
     this._ftSamples[this._ftIndex] = this.dt;
     this._ftIndex = (this._ftIndex + 1) % 60;
     if (this._ftCount < 60) this._ftCount++;
     if (this._ftCount === 60 && this.qualityLevel === 1.0) {
       let sum = 0;
       for (let i = 0; i < 60; i++) sum += this._ftSamples[i];
-      if (sum / 60 > 25) { // <40fps
+      if (sum / 60 > 25) {
         this.qualityLevel = 0.75;
         this.pool.max = Math.floor(500 * 0.75);
-        this.useGlowSprites = true;
       }
     }
 
@@ -247,9 +338,9 @@ export class Organism {
   _update() {
     const dt = this.dt;
     this.breathPhase += dt * 0.001 * this.profile.breathRate;
+    this.coronaAngle += dt * 0.00008; // slow corona rotation
     this.input.update(0.3);
 
-    // Sync touch state to memory system
     this.memory.isTouch = this.input.state.isTouch;
 
     // Refresh circadian every 60s
@@ -261,7 +352,23 @@ export class Organism {
       this.music.setMood(this.profile.musicMood);
     }
 
-    // Process birth target releases (timestamp-based, replaces setTimeout)
+    // Parallax from cursor position
+    if (this.input.state.active) {
+      const mx = (this.input.state.x / window.innerWidth - 0.5) * 2;
+      const my = (this.input.state.y / window.innerHeight - 0.5) * 2;
+      this.parallaxX += (mx * 15 - this.parallaxX) * 0.05;
+      this.parallaxY += (my * 15 - this.parallaxY) * 0.05;
+    } else {
+      this.parallaxX *= 0.98;
+      this.parallaxY *= 0.98;
+    }
+
+    // Intro sequence
+    if (this.introPhase !== "ready") {
+      this._updateIntro(dt);
+    }
+
+    // Process birth target releases
     for (let i = this.birthTargetReleases.length - 1; i >= 0; i--) {
       const entry = this.birthTargetReleases[i];
       if (this.time >= entry.releaseAt) {
@@ -272,23 +379,17 @@ export class Organism {
       }
     }
 
-    // Birth animation: stagger memory placement
-    if (this.birthPhase === "seed") {
+    // Birth animation
+    if (this.birthPhase === "blooming") {
       this.birthTimer += dt;
-      if (this.birthTimer > 800) { // wait 800ms then start birthing
-        this.birthPhase = "blooming";
-        this.birthTimer = 0;
-      }
-    } else if (this.birthPhase === "blooming") {
-      this.birthTimer += dt;
-      if (this.birthTimer > 80) { // birth one every 80ms = ~2.5s for all 20
+      if (this.birthTimer > 90) {
         this.birthTimer = 0;
         this._birthNextMemory();
       }
     }
 
-    // Bloom — spawn new particles on user interaction
-    if (this.input.state.active && this.generation < this.maxGeneration) {
+    // Bloom
+    if (this.input.state.active && this.generation < this.maxGeneration && this.introPhase === "ready") {
       this.bloomTimer += dt;
       if (this.bloomTimer > this.bloomInterval && this.pool.count < 350) {
         this.bloomTimer = 0;
@@ -307,12 +408,11 @@ export class Organism {
       }
     }
 
-    // Idle respiration — emit ambient pulse particles
+    // Idle respiration
     if (this.isIdle && this.memoriesPlaced) {
       this.idlePulseTimer += dt;
       if (this.idlePulseTimer > 2000 && this.pool.count < 300) {
         this.idlePulseTimer = 0;
-        // Pick a random memory particle to pulse from (cached list, no allocation)
         const memParticles = this._memoryParticles;
         if (memParticles.length > 0) {
           const mp = memParticles[Math.floor(Math.random() * memParticles.length)];
@@ -325,7 +425,7 @@ export class Organism {
             saturation: mp.saturation,
             lightness: mp.lightness + 10,
             alpha: 0.3,
-            decay: 0.015,
+            decay: 0.012,
             maxTrail: this.profile.trailLength,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
@@ -355,9 +455,8 @@ export class Organism {
         this.baseOrganismRadius * 0.5,
         Math.min(this.baseOrganismRadius * 2.0, this.organismRadius + delta * 0.5)
       );
-      // Pitch shift based on radius ratio
       const ratio = this.organismRadius / this.baseOrganismRadius;
-      this.music.setPitchShift(1.0 / ratio); // smaller = higher pitch
+      this.music.setPitchShift(1.0 / ratio);
     }
 
     // Physics
@@ -365,7 +464,7 @@ export class Organism {
     const cx = this.centerX;
     const cy = this.centerY;
     const breath = Math.sin(this.breathPhase) * (this.isIdle ? 0.5 : 0.3);
-    const cohesionStrength = 0.0003;
+    const cohesionStrength = 0.0002; // slightly weaker for wider spread
     const separationDist = 18;
     const damping = 0.97;
     const speed = this.profile.particleSpeed;
@@ -375,17 +474,15 @@ export class Organism {
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
 
-      // Anchor spring for discovered memory particles — dominates over other forces
+      // Anchor spring for discovered memory particles
       if (p.isMemory && p.memoryId) {
         const node = this.memory.nodes.get(p.memoryId);
         if (node?.discovered && node.anchorX !== null) {
           const ax = node.anchorX - p.x;
           const ay = node.anchorY - p.y;
-          // Strong spring toward anchor (0.02) + subtle breathing wobble (±3px)
           const wobbleX = Math.sin(this.breathPhase * 2 + p.breathPhase) * 3;
           const wobbleY = Math.cos(this.breathPhase * 2 + p.breathPhase) * 3;
           p.addForce((ax + wobbleX) * 0.02, (ay + wobbleY) * 0.02);
-          // Skip normal cohesion/breathing for anchored particles
           p.verletStep(dt, damping);
           p.updateTrail();
           if (p.decay > 0) p.life -= p.decay * dt * 0.001;
@@ -393,19 +490,19 @@ export class Organism {
         }
       }
 
-      // Breathing — expand/contract toward center
+      // Breathing
       const dx = cx - p.x;
       const dy = cy - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      // Cohesion: gentle pull toward center
+      // Cohesion: gentler for wider constellation
       p.addForce(dx * cohesionStrength * speed, dy * cohesionStrength * speed);
 
-      // Breathing oscillation (stronger when idle)
+      // Breathing oscillation
       const breathForce = breath * 0.02;
       p.addForce(-dx / dist * breathForce, -dy / dist * breathForce);
 
-      // Separation from neighbors
+      // Separation
       const neighbors = this.pool.query(p.x, p.y, separationDist);
       for (let j = 0; j < neighbors.length; j++) {
         const n = neighbors[j];
@@ -419,7 +516,7 @@ export class Organism {
         }
       }
 
-      // Cursor attraction (non-memory particles)
+      // Cursor attraction
       if (this.input.state.active && !p.isMemory) {
         const mx = this.input.state.px;
         const my = this.input.state.py;
@@ -432,20 +529,18 @@ export class Organism {
         }
       }
 
-      // Multi-touch membrane forces
+      // Multi-touch membrane
       if (this.input.state.touches.length >= 2 && !p.isMemory) {
         const touches = this.input.state.touches;
         for (let t = 0; t < touches.length - 1; t++) {
           const t1 = touches[t];
           const t2 = touches[t + 1];
-          // Attract particles to the line between touch points
           const lx = t2.x - t1.x;
           const ly = t2.y - t1.y;
           const len = Math.sqrt(lx * lx + ly * ly) || 1;
-          // Project particle onto line
-          const px = p.x - t1.x;
-          const py = p.y - t1.y;
-          const proj = Math.max(0, Math.min(1, (px * lx + py * ly) / (len * len)));
+          const ppx = p.x - t1.x;
+          const ppy = p.y - t1.y;
+          const proj = Math.max(0, Math.min(1, (ppx * lx + ppy * ly) / (len * len)));
           const closestX = t1.x + lx * proj;
           const closestY = t1.y + ly * proj;
           const lineDist = Math.sqrt((p.x - closestX) ** 2 + (p.y - closestY) ** 2);
@@ -463,20 +558,29 @@ export class Organism {
         p.addForce(gx, gy);
       }
 
-      // Text formation targets (with graceful release)
+      // Text formation targets
       if (p.targetX !== null && p.targetForce > 0) {
         const tx = p.targetX - p.x;
         const ty = p.targetY - p.y;
         p.addForce(tx * p.targetForce, ty * p.targetForce);
       }
 
-      // Verlet integration
-      p.verletStep(dt, damping);
+      // Shockwave push
+      for (const sw of this.memory.shockwaves) {
+        const sdx = p.x - sw.x;
+        const sdy = p.y - sw.y;
+        const sdist = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
+        const waveFront = sw.radius;
+        const waveWidth = 40;
+        if (Math.abs(sdist - waveFront) < waveWidth && !p.isMemory) {
+          const pushStrength = 2.0 * sw.alpha * (1 - Math.abs(sdist - waveFront) / waveWidth);
+          p.addForce((sdx / sdist) * pushStrength, (sdy / sdist) * pushStrength);
+        }
+      }
 
-      // Update trail
+      p.verletStep(dt, damping);
       p.updateTrail();
 
-      // Decay
       if (p.decay > 0) {
         p.life -= p.decay * dt * 0.001;
       }
@@ -489,8 +593,8 @@ export class Organism {
       }
     }
 
-    // Memory dwell detection
-    if (this.input.state.active) {
+    // Memory dwell detection (only when intro is done)
+    if (this.input.state.active && this.introPhase === "ready") {
       const hoveredMemory = this.memory.checkDwell(
         this.input.state.px,
         this.input.state.py,
@@ -520,16 +624,15 @@ export class Organism {
 
         this._formText(node.label);
 
-        // Recompute anchor positions for all discovered nodes
         const rx = this.organismRadius * 0.9;
-        const ry = this.organismRadius * 0.7;
+        const ry = this.organismRadius * 0.75;
         this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
 
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       }
     }
 
-    // Graceful text release (fade targetForce over 500ms instead of snapping)
+    // Graceful text release
     if (this.overlayFade > 0) {
       this.overlayFade -= dt * 0.0003;
       if (this.overlayFade <= 0.3 && this.textFormationActive) {
@@ -540,7 +643,7 @@ export class Organism {
       }
     }
 
-    // Decay text formation force during graceful release
+    // Decay text formation force
     if (this.textReleaseTimer > 0) {
       this.textReleaseTimer -= dt;
       const releasePct = Math.max(0, this.textReleaseTimer / 500);
@@ -559,7 +662,6 @@ export class Organism {
         this.cursorTrail.pop();
       }
     } else {
-      // Fade out cursor trail when inactive
       if (this.cursorTrail.length > 0) {
         this.cursorTrail.pop();
       }
@@ -607,7 +709,6 @@ export class Organism {
     const offsetX = this.centerX - width / 2;
     const offsetY = this.centerY - height / 2 - 80;
 
-    // Sort available particles by distance to text center for natural flow
     const textCenterX = this.centerX;
     const textCenterY = offsetY + height / 2;
     const available = this.pool.particles
@@ -635,7 +736,7 @@ export class Organism {
   _startGracefulRelease() {
     if (!this.textFormationActive) return;
     this.textFormationActive = false;
-    this.textReleaseTimer = 500; // 500ms graceful release
+    this.textReleaseTimer = 500;
   }
 
   _releaseText() {
@@ -647,6 +748,8 @@ export class Organism {
     }
     this.textFormationTargets = [];
   }
+
+  // ── Drawing ────────────────────────────────────────────
 
   _draw() {
     const ctx = this.ctx;
@@ -663,18 +766,118 @@ export class Organism {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // Ambient center glow
-    const glowR = this.organismRadius * 1.5;
-    const glow = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, glowR);
-    const gi = this.profile.glowIntensity * 0.04;
+    // ── Star field (background parallax layer) ──
+    if (this.starField && (this.introPhase !== "genesis")) {
+      const starCanvas = this.starField.render(this.time * 0.001);
+      const px = this.parallaxX * 0.1;
+      const py = this.parallaxY * 0.1;
+      ctx.globalAlpha = this.introPhase === "burst" ? Math.min(1, this.introTimer / 1000) : 1;
+      ctx.drawImage(starCanvas, px, py);
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Intro genesis point ──
+    if (this.introPhase === "genesis") {
+      const progress = Math.min(1, this.introTimer / 1500);
+      const pulseSize = 3 + Math.sin(this.time * 0.005) * 2;
+      const size = pulseSize * progress;
+      const gi = 0.6 * progress;
+      const grad = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, size * 10);
+      grad.addColorStop(0, `hsla(${this.profile.primary.h}, 80%, 90%, ${gi})`);
+      grad.addColorStop(0.3, `hsla(${this.profile.primary.h}, 70%, 70%, ${gi * 0.5})`);
+      grad.addColorStop(1, "transparent");
+      ctx.fillStyle = grad;
+      ctx.fillRect(this.centerX - size * 10, this.centerY - size * 10, size * 20, size * 20);
+
+      ctx.beginPath();
+      ctx.arc(this.centerX, this.centerY, size, 0, TWO_PI);
+      ctx.fillStyle = `hsla(${this.profile.primary.h}, 80%, 90%, ${0.8 * progress})`;
+      ctx.fill();
+      return; // Only draw genesis point during this phase
+    }
+
+    // ── Ambient nebula glow (wider than before) ──
+    const glowR = this.organismRadius * 1.8;
+    const ambGlow = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, glowR);
+    const gi = this.profile.glowIntensity * 0.03;
     const ph = this.profile.primary.h;
-    glow.addColorStop(0, `hsla(${ph}, 70%, 50%, ${gi})`);
-    glow.addColorStop(0.5, `hsla(${ph}, 60%, 40%, ${gi * 0.4})`);
-    glow.addColorStop(1, "transparent");
-    ctx.fillStyle = glow;
+    ambGlow.addColorStop(0, `hsla(${ph}, 70%, 50%, ${gi})`);
+    ambGlow.addColorStop(0.3, `hsla(${ph}, 60%, 40%, ${gi * 0.5})`);
+    ambGlow.addColorStop(0.7, `hsla(${ph}, 50%, 30%, ${gi * 0.15})`);
+    ambGlow.addColorStop(1, "transparent");
+    ctx.fillStyle = ambGlow;
     ctx.fillRect(this.centerX - glowR, this.centerY - glowR, glowR * 2, glowR * 2);
 
-    // Draw connection trails
+    // ── Root node stellar core ──
+    const rootNode = this.memory.nodes.get("root");
+    if (rootNode?.particle) {
+      const rp = rootNode.particle;
+      this._drawStellarCore(ctx, rp.x, rp.y);
+    }
+
+    // ── Shockwaves ──
+    for (const sw of this.memory.shockwaves) {
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, TWO_PI);
+      ctx.strokeStyle = `hsla(${sw.hue}, 80%, 80%, ${sw.alpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Inner ring
+      if (sw.radius > 10) {
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, sw.radius * 0.9, 0, TWO_PI);
+        ctx.strokeStyle = `hsla(${sw.hue}, 60%, 90%, ${sw.alpha * 0.4})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // ── Flowing connection streams ──
+    for (const stream of this.memory.flowStreams) {
+      const fromNode = this.memory.nodes.get(stream.from);
+      const toNode = this.memory.nodes.get(stream.to);
+      if (!fromNode?.particle || !toNode?.particle) continue;
+
+      const x1 = fromNode.particle.x;
+      const y1 = fromNode.particle.y;
+      const x2 = toNode.particle.x;
+      const y2 = toNode.particle.y;
+
+      // Curved path with perpendicular offset
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      // Perpendicular offset for curve
+      const perpX = -dy / len * 20;
+      const perpY = dx / len * 20;
+      const cpx = mx + perpX;
+      const cpy = my + perpY;
+
+      // Faint connection line
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+      ctx.strokeStyle = `hsla(${this.profile.primary.h}, 50%, 50%, 0.08)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Flowing particles along the curve
+      for (const fp of stream.particles) {
+        const t = fp.t;
+        const mt = 1 - t;
+        // Quadratic bezier point
+        const px = mt * mt * x1 + 2 * mt * t * cpx + t * t * x2;
+        const py = mt * mt * y1 + 2 * mt * t * cpy + t * t * y2;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5, 0, TWO_PI);
+        ctx.fillStyle = `hsla(${this.profile.accent.h}, 80%, 70%, 0.5)`;
+        ctx.fill();
+      }
+    }
+
+    // ── Connection trails (temporary, on discovery) ──
     for (const trail of this.memory.connectionTrails) {
       const fromNode = this.memory.nodes.get(trail.from);
       const toNode = this.memory.nodes.get(trail.to);
@@ -702,7 +905,7 @@ export class Organism {
       }
     }
 
-    // Draw particles
+    // ── Draw particles ──
     const particles = this.pool.particles;
     const glowSprite = this._glowSprite;
 
@@ -721,16 +924,31 @@ export class Organism {
         ctx.stroke();
       }
 
-      // Glow — use sprite for non-memory, dynamic gradient for memory
+      // Glow
       if (p.isMemory) {
-        const glowSize = p.radius * 6;
-        const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-        particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
-        particleGlow.addColorStop(1, "transparent");
-        ctx.fillStyle = particleGlow;
-        ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+        const node = this.memory.nodes.get(p.memoryId);
+        const isIdentity = node?.type === "identity";
+
+        if (isIdentity && node?.discovered) {
+          // Identity nodes: diffuse nebula cloud
+          const nebulaR = p.radius * 12;
+          const nebulaGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nebulaR);
+          nebulaGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.15})`);
+          nebulaGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation - 10}%, ${p.lightness - 10}%, ${p.alpha * p.life * 0.06})`);
+          nebulaGlow.addColorStop(1, "transparent");
+          ctx.fillStyle = nebulaGlow;
+          ctx.fillRect(p.x - nebulaR, p.y - nebulaR, nebulaR * 2, nebulaR * 2);
+        } else {
+          // Work/root nodes: brighter focused glow
+          const glowSize = p.radius * 8;
+          const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+          particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
+          particleGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.1})`);
+          particleGlow.addColorStop(1, "transparent");
+          ctx.fillStyle = particleGlow;
+          ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+        }
       } else if (glowSprite) {
-        // Pre-rendered sprite glow
         const spriteSize = p.radius * 3;
         ctx.globalAlpha = p.alpha * p.life * 0.3;
         ctx.drawImage(glowSprite, p.x - spriteSize, p.y - spriteSize, spriteSize * 2, spriteSize * 2);
@@ -767,19 +985,32 @@ export class Organism {
           ctx.lineWidth = 0.5;
           ctx.stroke();
         } else if (node) {
-          // Undiscovered: brighter pulsing ring
+          // Undiscovered: flickering anomaly
+          const flicker = Math.sin(node.flickerPhase) * 0.5 + 0.5;
+          const irregularPulse = Math.sin(node.pulsePhase * 1.3) * 0.3 + Math.cos(node.flickerPhase * 0.7) * 0.2;
           const isWarming = this.memory.warmTarget === p.memoryId;
-          const baseAlpha = isWarming ? 0.4 : 0.2;
-          const pulseAmp = isWarming ? 0.2 : 0.15;
-          const pulseAlpha = baseAlpha + Math.sin(node.pulsePhase) * pulseAmp;
-          const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 2;
+          const approachBoost = node.approachGlow * 0.4;
+          const baseAlpha = isWarming ? 0.45 : 0.15 + irregularPulse * 0.15;
+          const pulseAlpha = baseAlpha + flicker * 0.1 + approachBoost;
+          const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5;
+
           ctx.beginPath();
           ctx.arc(p.x, p.y, pulseRadius, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${pulseAlpha})`;
-          ctx.lineWidth = isWarming ? 1.2 : 0.8;
+          ctx.lineWidth = isWarming ? 1.2 : 0.6 + flicker * 0.3;
           ctx.stroke();
 
-          // Warming state: show faint label preview
+          // Approach: gravitational lensing — attract nearby star field visually
+          if (node.approachGlow > 0.1) {
+            const lensR = 30 + node.approachGlow * 25;
+            const lensGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, lensR);
+            lensGlow.addColorStop(0, `hsla(${p.hue}, 60%, 70%, ${node.approachGlow * 0.15})`);
+            lensGlow.addColorStop(1, "transparent");
+            ctx.fillStyle = lensGlow;
+            ctx.fillRect(p.x - lensR, p.y - lensR, lensR * 2, lensR * 2);
+          }
+
+          // Warming label preview
           if (isWarming) {
             ctx.globalAlpha = 0.3;
             ctx.font = `500 10px "Space Grotesk", sans-serif`;
@@ -792,12 +1023,26 @@ export class Organism {
       }
     }
 
-    // Custom cursor glow (renders at raw position for immediate feedback)
-    if (this.input.state.active && !this.input.state.isTouch) {
-      const cx = this.input.state.x;
-      const cy = this.input.state.y;
+    // ── Discovery progress ring around core ──
+    if (this.memory.discovered.size > 0 && rootNode?.particle) {
+      const rp = rootNode.particle;
+      const total = MEMORIES.length;
+      const discovered = this.memory.discovered.size;
+      const targetAngle = (discovered / total) * TWO_PI;
+      this.progressAngle += (targetAngle - this.progressAngle) * 0.05;
 
-      // Cursor trail
+      ctx.beginPath();
+      ctx.arc(rp.x, rp.y, 35, -Math.PI / 2, -Math.PI / 2 + this.progressAngle);
+      ctx.strokeStyle = `hsla(${this.profile.accent.h}, 80%, 65%, 0.4)`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // ── Custom cursor ──
+    if (this.input.state.active && !this.input.state.isTouch) {
+      const curX = this.input.state.x;
+      const curY = this.input.state.y;
+
       if (this.cursorTrail.length > 1) {
         ctx.beginPath();
         ctx.moveTo(this.cursorTrail[0].x, this.cursorTrail[0].y);
@@ -809,23 +1054,22 @@ export class Organism {
         ctx.stroke();
       }
 
-      // Cursor dot
       const cursorBreath = 1 + Math.sin(this.breathPhase * 2) * 0.2;
       const cursorR = 4 * cursorBreath;
-      const cursorGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cursorR * 4);
+      const cursorGlow = ctx.createRadialGradient(curX, curY, 0, curX, curY, cursorR * 4);
       cursorGlow.addColorStop(0, `hsla(${this.profile.primary.h}, 80%, 80%, 0.6)`);
       cursorGlow.addColorStop(0.5, `hsla(${this.profile.primary.h}, 70%, 60%, 0.15)`);
       cursorGlow.addColorStop(1, "transparent");
       ctx.fillStyle = cursorGlow;
-      ctx.fillRect(cx - cursorR * 4, cy - cursorR * 4, cursorR * 8, cursorR * 8);
+      ctx.fillRect(curX - cursorR * 4, curY - cursorR * 4, cursorR * 8, cursorR * 8);
 
       ctx.beginPath();
-      ctx.arc(cx, cy, cursorR, 0, TWO_PI);
+      ctx.arc(curX, curY, cursorR, 0, TWO_PI);
       ctx.fillStyle = `hsla(${this.profile.primary.h}, 80%, 85%, 0.7)`;
       ctx.fill();
     }
 
-    // Discovered content overlay (bottom of screen)
+    // ── Discovered content overlay ──
     if (this.discoveredOverlay && this.overlayFade > 0) {
       const node = this.discoveredOverlay;
       const oy = h - 60;
@@ -841,6 +1085,48 @@ export class Organism {
       }
       ctx.globalAlpha = 1;
     }
+  }
+
+  _drawStellarCore(ctx, x, y) {
+    // Multi-layered core glow
+    const coreSize = 25;
+    const breathPulse = 1 + Math.sin(this.breathPhase * 1.5) * 0.08;
+    const size = coreSize * breathPulse;
+
+    // Outer halo
+    const haloR = size * 3;
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, haloR);
+    halo.addColorStop(0, `hsla(${this.profile.accent.h}, 70%, 80%, 0.08)`);
+    halo.addColorStop(0.4, `hsla(${this.profile.primary.h}, 60%, 60%, 0.03)`);
+    halo.addColorStop(1, "transparent");
+    ctx.fillStyle = halo;
+    ctx.fillRect(x - haloR, y - haloR, haloR * 2, haloR * 2);
+
+    // Corona rays (slowly rotating spokes)
+    const rayCount = 6;
+    for (let i = 0; i < rayCount; i++) {
+      const angle = this.coronaAngle + (i / rayCount) * TWO_PI;
+      const rayLen = size * 1.8 + Math.sin(this.breathPhase * 2 + i) * size * 0.3;
+      const rx = x + Math.cos(angle) * rayLen;
+      const ry = y + Math.sin(angle) * rayLen;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(rx, ry);
+      ctx.strokeStyle = `hsla(${this.profile.accent.h}, 70%, 75%, 0.15)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // Inner core glow
+    const innerR = size * 1.2;
+    const inner = ctx.createRadialGradient(x, y, 0, x, y, innerR);
+    inner.addColorStop(0, `hsla(${this.profile.accent.h}, 50%, 95%, 0.6)`);
+    inner.addColorStop(0.3, `hsla(${this.profile.accent.h}, 60%, 80%, 0.25)`);
+    inner.addColorStop(0.7, `hsla(${this.profile.primary.h}, 70%, 60%, 0.08)`);
+    inner.addColorStop(1, "transparent");
+    ctx.fillStyle = inner;
+    ctx.fillRect(x - innerR, y - innerR, innerR * 2, innerR * 2);
   }
 
   _handleKeyboard(e) {
@@ -876,19 +1162,17 @@ export class Organism {
           this._formText(node.label);
         }
         const rx = this.organismRadius * 0.9;
-        const ry = this.organismRadius * 0.7;
+        const ry = this.organismRadius * 0.75;
         this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       } else if (node?.discovered && node?.url) {
         window.open(node.url, "_blank", "noopener,noreferrer");
       }
     } else if (e.key === "Escape") {
-      // Dismiss discovery overlay
       this.overlayFade = 0;
       this.discoveredOverlay = null;
       if (this.textFormationActive) this._startGracefulRelease();
     }
-    // Space for audio toggle is handled by React
   }
 
   _focusMemory(id) {
@@ -902,7 +1186,6 @@ export class Organism {
     }
   }
 
-  /* Returns discovered memory nodes with their current screen positions */
   getDiscoveredPositions() {
     const result = [];
     for (const [id, node] of this.memory.nodes) {
@@ -927,6 +1210,10 @@ export class Organism {
 
   onDiscoveryChange(fn) {
     this._onDiscoveryChange = fn;
+  }
+
+  onIntroComplete(fn) {
+    this._onIntroComplete = fn;
   }
 
   enableAudio() {
