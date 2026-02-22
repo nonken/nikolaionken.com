@@ -3,7 +3,8 @@ export default function Home() {
     <>
       <section className="hero">
         <span className="hero-greeting">Hello, I&apos;m</span>
-        <h1>Nikolai Onken</h1>
+        <h1 data-text="Nikolai Onken">Nikolai Onken</h1>
+        <hr className="hero-rule" />
         <p className="hero-description">
           Coder, builder, musician. I love nature, humans, the universe, our
           earth, and the richness of human experiences. Currently CTO at{" "}
