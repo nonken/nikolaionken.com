@@ -37,6 +37,8 @@ body {
   line-height: 1.625;
   font-size: 1rem;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Subtle animated gradient background */
@@ -202,8 +204,10 @@ img {
 /* Main Content */
 #main {
   max-width: var(--max-width);
+  width: 100%;
   margin: 0 auto;
   padding: 1em 1em 3em;
+  flex: 1;
 }
 
 /* Hero Section */
