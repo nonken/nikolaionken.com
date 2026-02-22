@@ -9,10 +9,16 @@ export default function AboutPage() {
     <article className="page-content projects-section">
       <h1>Nikolai Onken</h1>
 
+      <p className="about-identity">
+        Coder &middot; Builder &middot; Musician &middot; Nature lover &middot; Human
+      </p>
+
       <p className="about-intro">
         Entrepreneur and engineer building at the intersection of finance and
         technology. Based in Amsterdam. Building software since 1997, from open
         source JavaScript frameworks to cloud IDEs to crypto infrastructure.
+        When not coding, making music, exploring nature, and seeking out the
+        experiences that connect us all.
       </p>
 
       <h3>Current Work</h3>
@@ -30,7 +36,7 @@ export default function AboutPage() {
       <h3>Previous Work</h3>
       <ul className="work-list">
         <li>
-          <a href="https://aws.amazon.com/cloud9/">Cloud9 IDE → AWS</a>{" "}
+          <a href="https://aws.amazon.com/cloud9/">Cloud9 IDE &rarr; AWS</a>{" "}
           <em>
             VP Engineering, led the Amsterdam office. Cloud9 was acquired by AWS
             in 2016
