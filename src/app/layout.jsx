@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { PT_Serif, PT_Sans } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
@@ -15,7 +14,7 @@ const ptSans = PT_Sans({
   weight: ["400", "700"],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: {
     default: "nikolaionken.com",
     template: "%s | nikolaionken.com",
@@ -31,11 +30,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${ptSerif.variable} ${ptSans.variable}`}>
