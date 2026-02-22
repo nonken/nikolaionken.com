@@ -218,8 +218,26 @@ export default function Home() {
       });
     }
 
+    // Auto-start audio on first user interaction (required by browser autoplay policy)
+    let audioStarted = false;
+    function startAudio() {
+      if (audioStarted) return;
+      audioStarted = true;
+      if (!audioRef.current) {
+        audioRef.current = initAudio();
+        audioRef.current.toggle(); // enable immediately
+        setAudioOn(true);
+      }
+      document.removeEventListener("click", startAudio);
+      document.removeEventListener("keydown", startAudio);
+    }
+    document.addEventListener("click", startAudio);
+    document.addEventListener("keydown", startAudio);
+
     return () => {
       cleanupParallax();
+      document.removeEventListener("click", startAudio);
+      document.removeEventListener("keydown", startAudio);
       if (typewriterPromise && typewriterPromise.cancel) {
         typewriterPromise.cancel();
       }
