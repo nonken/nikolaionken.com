@@ -61,26 +61,29 @@ export default function Home() {
     organismRef.current = org;
     org.start();
 
-    // Listen for discovery changes — update both links and labels
+    // Listen for discovery changes — update links and labels immediately
     org.onDiscoveryChange(() => {
       const positions = org.getDiscoveredPositions();
       setDiscoveredLinks(positions.filter(p => p.url));
       setDiscoveredLabels(positions);
     });
 
-    // Sync link positions with rAF (not setInterval) for smooth tracking
-    let syncRafId;
-    function syncPositions() {
+    // Throttled position sync (~100ms) — only updates React state when
+    // positions have meaningfully changed (>1px movement detected).
+    let lastPositionSnapshot = "";
+    const syncInterval = setInterval(() => {
       if (!organismRef.current) return;
       const positions = organismRef.current.getDiscoveredPositions();
+      // Cheap change detection: serialize rounded positions
+      const snapshot = positions.map(p => `${p.id}:${Math.round(p.x)},${Math.round(p.y)}`).join("|");
+      if (snapshot === lastPositionSnapshot) return;
+      lastPositionSnapshot = snapshot;
       setDiscoveredLinks(positions.filter(p => p.url));
       setDiscoveredLabels(positions);
-      syncRafId = requestAnimationFrame(syncPositions);
-    }
-    syncRafId = requestAnimationFrame(syncPositions);
+    }, 100);
 
     return () => {
-      cancelAnimationFrame(syncRafId);
+      clearInterval(syncInterval);
       org.destroy();
       organismRef.current = null;
     };

@@ -18,10 +18,10 @@ export class SpatialHash {
   }
 
   _key(x, y) {
-    // Numeric key avoids string allocation in hot path
+    // Numeric key via XOR avoids string allocation and minimizes collisions
     const cx = (x / CELL_SIZE) | 0;
     const cy = (y / CELL_SIZE) | 0;
-    return cx * 73856093 + cy * 19349669;
+    return (cx * 73856093) ^ (cy * 19349669);
   }
 
   insert(p) {
@@ -43,7 +43,7 @@ export class SpatialHash {
     const maxCy = ((y + radius) / CELL_SIZE) | 0;
     for (let cx = minCx; cx <= maxCx; cx++) {
       for (let cy = minCy; cy <= maxCy; cy++) {
-        const k = cx * 73856093 + cy * 19349669;
+        const k = (cx * 73856093) ^ (cy * 19349669);
         const arr = this.cells.get(k);
         if (!arr) continue;
         for (let i = 0; i < arr.length; i++) {

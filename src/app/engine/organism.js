@@ -51,14 +51,21 @@ export class Organism {
     this.birthTimer = 0;
     this.birthIndex = 0; // next memory to birth
     this.memoriesPlaced = false;
+    // Particles with pending target release (timestamp-based, no setTimeout)
+    this.birthTargetReleases = []; // { particle, releaseAt }
 
     // Idle respiration state
     this.idleTimer = 0;
     this.idlePulseTimer = 0;
     this.isIdle = false;
 
-    // Adaptive quality
-    this.frameTimeSamples = [];
+    // Cached memory particle list (only changes during birth phase)
+    this._memoryParticles = [];
+
+    // Adaptive quality — circular buffer avoids O(n) shift
+    this._ftSamples = new Float64Array(60);
+    this._ftIndex = 0;
+    this._ftCount = 0;
     this.qualityLevel = 1.0; // 1.0 = full, 0.75 = reduced
     this.useGlowSprites = true;
 
@@ -175,14 +182,10 @@ export class Organism {
       p.targetX = targetX;
       p.targetY = targetY;
       p.targetForce = 0.008;
-      // Release target after 2s
-      setTimeout(() => {
-        if (p) {
-          p.targetX = null;
-          p.targetY = null;
-          p.targetForce = 0;
-        }
-      }, 2000);
+      // Schedule target release via update loop (no setTimeout — safe on destroy)
+      this.birthTargetReleases.push({ particle: p, releaseAt: this.time + 2000 });
+      // Cache memory particle reference
+      this._memoryParticles.push(p);
     }
 
     this.birthIndex++;
@@ -215,15 +218,17 @@ export class Organism {
     this.lastFrame = ts;
     this.time += this.dt;
 
-    // Adaptive quality monitoring
-    this.frameTimeSamples.push(this.dt);
-    if (this.frameTimeSamples.length > 60) {
-      this.frameTimeSamples.shift();
-      const avg = this.frameTimeSamples.reduce((a, b) => a + b, 0) / this.frameTimeSamples.length;
-      if (avg > 25 && this.qualityLevel === 1.0) { // <40fps
+    // Adaptive quality monitoring — circular buffer (O(1) per frame)
+    this._ftSamples[this._ftIndex] = this.dt;
+    this._ftIndex = (this._ftIndex + 1) % 60;
+    if (this._ftCount < 60) this._ftCount++;
+    if (this._ftCount === 60 && this.qualityLevel === 1.0) {
+      let sum = 0;
+      for (let i = 0; i < 60; i++) sum += this._ftSamples[i];
+      if (sum / 60 > 25) { // <40fps
         this.qualityLevel = 0.75;
         this.pool.max = Math.floor(500 * 0.75);
-        this.useGlowSprites = true; // force sprites
+        this.useGlowSprites = true;
       }
     }
 
@@ -248,6 +253,17 @@ export class Organism {
       this.profile = getCircadianProfile();
       this.music.setScale(this.profile.scale);
       this.music.setMood(this.profile.musicMood);
+    }
+
+    // Process birth target releases (timestamp-based, replaces setTimeout)
+    for (let i = this.birthTargetReleases.length - 1; i >= 0; i--) {
+      const entry = this.birthTargetReleases[i];
+      if (this.time >= entry.releaseAt) {
+        entry.particle.targetX = null;
+        entry.particle.targetY = null;
+        entry.particle.targetForce = 0;
+        this.birthTargetReleases.splice(i, 1);
+      }
     }
 
     // Birth animation: stagger memory placement
@@ -290,8 +306,8 @@ export class Organism {
       this.idlePulseTimer += dt;
       if (this.idlePulseTimer > 2000 && this.pool.count < 300) {
         this.idlePulseTimer = 0;
-        // Pick a random memory particle to pulse from
-        const memParticles = this.pool.particles.filter(p => p.isMemory);
+        // Pick a random memory particle to pulse from (cached list, no allocation)
+        const memParticles = this._memoryParticles;
         if (memParticles.length > 0) {
           const mp = memParticles[Math.floor(Math.random() * memParticles.length)];
           const angle = Math.random() * TWO_PI;
