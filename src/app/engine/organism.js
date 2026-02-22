@@ -109,6 +109,12 @@ export class Organism {
     this.centerY = h / 2;
     this.baseOrganismRadius = Math.min(w, h) * 0.25;
     this.organismRadius = this.baseOrganismRadius;
+    // Recompute anchors on resize
+    if (this.memory && this.memory.discovered.size > 0) {
+      const rx = this.organismRadius * 0.9;
+      const ry = this.organismRadius * 0.7;
+      this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
+    }
   }
 
   start() {
@@ -369,6 +375,24 @@ export class Organism {
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
 
+      // Anchor spring for discovered memory particles — dominates over other forces
+      if (p.isMemory && p.memoryId) {
+        const node = this.memory.nodes.get(p.memoryId);
+        if (node?.discovered && node.anchorX !== null) {
+          const ax = node.anchorX - p.x;
+          const ay = node.anchorY - p.y;
+          // Strong spring toward anchor (0.02) + subtle breathing wobble (±3px)
+          const wobbleX = Math.sin(this.breathPhase * 2 + p.breathPhase) * 3;
+          const wobbleY = Math.cos(this.breathPhase * 2 + p.breathPhase) * 3;
+          p.addForce((ax + wobbleX) * 0.02, (ay + wobbleY) * 0.02);
+          // Skip normal cohesion/breathing for anchored particles
+          p.verletStep(dt, damping);
+          p.updateTrail();
+          if (p.decay > 0) p.life -= p.decay * dt * 0.001;
+          continue;
+        }
+      }
+
       // Breathing — expand/contract toward center
       const dx = cx - p.x;
       const dy = cy - p.y;
@@ -495,6 +519,11 @@ export class Organism {
         this.overlayFade = 1.0;
 
         this._formText(node.label);
+
+        // Recompute anchor positions for all discovered nodes
+        const rx = this.organismRadius * 0.9;
+        const ry = this.organismRadius * 0.7;
+        this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
 
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       }
@@ -720,6 +749,16 @@ export class Organism {
       if (p.isMemory) {
         const node = this.memory.nodes.get(p.memoryId);
 
+        // Keyboard focus indicator
+        const isFocused = this.focusedMemoryIndex >= 0 && this.memoryIds[this.focusedMemoryIndex] === p.memoryId;
+        if (isFocused) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 3.5, 0, TWO_PI);
+          ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, 0.8)`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
         if (node?.discovered) {
           // Discovered: solid ring
           ctx.beginPath();
@@ -728,14 +767,27 @@ export class Organism {
           ctx.lineWidth = 0.5;
           ctx.stroke();
         } else if (node) {
-          // Undiscovered: pulsing ring (subtle invitation to explore)
-          const pulseAlpha = 0.1 + Math.sin(node.pulsePhase) * 0.1;
+          // Undiscovered: brighter pulsing ring
+          const isWarming = this.memory.warmTarget === p.memoryId;
+          const baseAlpha = isWarming ? 0.4 : 0.2;
+          const pulseAmp = isWarming ? 0.2 : 0.15;
+          const pulseAlpha = baseAlpha + Math.sin(node.pulsePhase) * pulseAmp;
           const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 2;
           ctx.beginPath();
           ctx.arc(p.x, p.y, pulseRadius, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${pulseAlpha})`;
-          ctx.lineWidth = 0.8;
+          ctx.lineWidth = isWarming ? 1.2 : 0.8;
           ctx.stroke();
+
+          // Warming state: show faint label preview
+          if (isWarming) {
+            ctx.globalAlpha = 0.3;
+            ctx.font = `500 10px "Space Grotesk", sans-serif`;
+            ctx.textAlign = "center";
+            ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 20}%, 0.5)`;
+            ctx.fillText(node.label, p.x, p.y - 20);
+            ctx.globalAlpha = 1;
+          }
         }
       }
     }
@@ -823,10 +875,18 @@ export class Organism {
           this.overlayFade = 1.0;
           this._formText(node.label);
         }
+        const rx = this.organismRadius * 0.9;
+        const ry = this.organismRadius * 0.7;
+        this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       } else if (node?.discovered && node?.url) {
         window.open(node.url, "_blank", "noopener,noreferrer");
       }
+    } else if (e.key === "Escape") {
+      // Dismiss discovery overlay
+      this.overlayFade = 0;
+      this.discoveredOverlay = null;
+      if (this.textFormationActive) this._startGracefulRelease();
     }
     // Space for audio toggle is handled by React
   }
@@ -859,6 +919,10 @@ export class Organism {
       }
     }
     return result;
+  }
+
+  getDiscoveryCount() {
+    return { discovered: this.memory.discovered.size, total: MEMORIES.length };
   }
 
   onDiscoveryChange(fn) {

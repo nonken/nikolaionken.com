@@ -70,6 +70,7 @@ export class MemorySystem {
     this.formingText = false;
     this.connectionTrails = [];
     this.isTouch = false;
+    this.warmTarget = null; // id of node cursor is warming (within 100px)
 
     for (const m of MEMORIES) {
       this.nodes.set(m.id, {
@@ -78,6 +79,8 @@ export class MemorySystem {
         discovered: false,
         musicPlayed: false,
         pulsePhase: Math.random() * Math.PI * 2,
+        anchorX: null,
+        anchorY: null,
       });
     }
   }
@@ -94,14 +97,17 @@ export class MemorySystem {
   }
 
   checkDwell(cursorX, cursorY, dt) {
-    const dwellRadius = this.isTouch ? 80 : 50;
-    const dwellThreshold = this.isTouch ? 600 : 800;
+    const dwellRadius = this.isTouch ? 100 : 50;
+    const dwellThreshold = this.isTouch ? 400 : 500;
+    const warmRadius = this.isTouch ? 120 : 100;
 
     let nearestDist = Infinity;
     let nearest = null;
+    let warmNearest = null;
+    let warmNearestDist = Infinity;
 
     for (const [id, node] of this.nodes) {
-      if (!node.particle) continue;
+      if (!node.particle || node.discovered) continue;
       const dx = node.particle.x - cursorX;
       const dy = node.particle.y - cursorY;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -109,7 +115,14 @@ export class MemorySystem {
         nearestDist = dist;
         nearest = id;
       }
+      if (dist < warmRadius && dist < warmNearestDist) {
+        warmNearestDist = dist;
+        warmNearest = id;
+      }
     }
+
+    // Update warming target (cursor within warmRadius of an undiscovered node)
+    this.warmTarget = warmNearest;
 
     if (nearest && nearest === this.dwellTarget) {
       this.dwellTime += dt;
@@ -122,6 +135,22 @@ export class MemorySystem {
     }
 
     return nearest;
+  }
+
+  /* Compute anchor positions for all discovered nodes on an elliptical ring */
+  computeAnchors(centerX, centerY, radiusX, radiusY) {
+    const GOLDEN_ANGLE = 137.508 * (Math.PI / 180);
+    const discovered = Array.from(this.discovered);
+    const count = discovered.length;
+    for (let i = 0; i < count; i++) {
+      const angle = i * GOLDEN_ANGLE;
+      const r = 0.5 + (i / Math.max(count, 1)) * 0.5; // 50%-100% of radius
+      const node = this.nodes.get(discovered[i]);
+      if (node) {
+        node.anchorX = centerX + Math.cos(angle) * radiusX * r;
+        node.anchorY = centerY + Math.sin(angle) * radiusY * r;
+      }
+    }
   }
 
   discover(id) {

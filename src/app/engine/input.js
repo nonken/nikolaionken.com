@@ -34,6 +34,7 @@ export function createInputHandler(canvas) {
 
   const listeners = [];
   let prevTouchDist = 0;
+  let touchStartedOnCanvas = false;
 
   function on(el, event, fn, opts) {
     el.addEventListener(event, fn, opts);
@@ -52,7 +53,11 @@ export function createInputHandler(canvas) {
   }
 
   function onTouchStart(e) {
-    e.preventDefault();
+    // Only prevent default if touch started on canvas itself (not on overlay links/buttons)
+    touchStartedOnCanvas = e.target === canvas;
+    if (touchStartedOnCanvas) {
+      e.preventDefault();
+    }
     state.active = true;
     state.isTouch = true;
     updateTouches(e);
@@ -63,7 +68,10 @@ export function createInputHandler(canvas) {
   }
 
   function onTouchMove(e) {
-    e.preventDefault();
+    // Only prevent scrolling if touch started on canvas
+    if (touchStartedOnCanvas) {
+      e.preventDefault();
+    }
     const prevX = state.x;
     const prevY = state.y;
     updateTouches(e);
