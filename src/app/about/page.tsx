@@ -17,6 +17,9 @@ export default function AboutPage() {
         Entrepreneur and engineer building at the intersection of finance and
         technology. Based in Amsterdam. Building software since 1997, from open
         source JavaScript frameworks to cloud IDEs to crypto infrastructure.
+        Currently at{" "}
+        <a href="https://asymmetric.financial/">Asymmetric</a> and hacking on{" "}
+        <a href="https://warpmetrics.com/">warpmetrics.com</a> for fun.
         When not coding, making music, exploring nature, and seeking out the
         experiences that connect us all.
       </p>
@@ -24,15 +27,15 @@ export default function AboutPage() {
       <h3>Work</h3>
       <ul className="work-list">
         <li>
-          <a href="https://www.dailydots.com/">DailyDots</a>
-        </li>
-        <li>
           <a href="https://asymmetric.financial/">Asymmetric</a>{" "}
           <em>CTO &mdash; crypto-focused investment firm</em>
         </li>
         <li>
           <a href="https://warpmetrics.com/">WarpMetrics</a>{" "}
           <em>AI-powered coding agents</em>
+        </li>
+        <li>
+          <a href="https://www.dailydots.com/">DailyDots</a>
         </li>
         <li>
           <a href="https://mintline.ai/">Mintline.ai</a>{" "}
