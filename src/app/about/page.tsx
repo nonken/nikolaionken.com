@@ -39,9 +39,13 @@ export default function AboutPage() {
           <em>AI-powered financial reconciliation</em>
         </li>
         <li>
-          <a href="https://aws.amazon.com/cloud9/">Cloud9 IDE &rarr; AWS</a>{" "}
+          <a href="https://aws.amazon.com/cloud9/">AWS (Cloud9)</a>{" "}
+          <em>Site lead, Amsterdam</em>
+        </li>
+        <li>
+          <a href="https://c9.io">Cloud9 IDE</a>{" "}
           <em>
-            VP Engineering, led the Amsterdam office. Cloud9 was acquired by AWS
+            Site lead &mdash; established the Amsterdam office. Acquired by AWS
             in 2016
           </em>
         </li>
