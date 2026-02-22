@@ -7,8 +7,8 @@ export default function Home() {
         <p className="hero-description">
           Coder, builder, musician. I love nature, humans, the universe, our
           earth, and the richness of human experiences. Currently CTO at{" "}
-          <a href="https://asymmetric.financial/">Asymmetric</a> and building{" "}
-          <a href="https://mintline.ai/">Mintline.ai</a>.
+          <a href="https://asymmetric.financial/" target="_blank" rel="noopener noreferrer">Asymmetric</a> and building{" "}
+          <a href="https://mintline.ai/" target="_blank" rel="noopener noreferrer">Mintline.ai</a>.
         </p>
         <div className="identity-pillars">
           <span className="pillar">Coder</span>
