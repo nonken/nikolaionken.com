@@ -11,18 +11,11 @@
   --void: #0a0a0f;
   --glow: #4ecdc4;
   --glow-warm: #ff6b6b;
-  --glow-dim: rgba(78, 205, 196, 0.08);
-  --glow-med: rgba(78, 205, 196, 0.25);
-  --glow-bright: rgba(78, 205, 196, 0.6);
   --text: #e8e8e8;
   --text-muted: #6b7280;
   --text-dim: #3d4250;
-  --node-bg: rgba(255, 255, 255, 0.03);
-  --node-border: rgba(78, 205, 196, 0.12);
   --font-family-mono: "IBM Plex Mono", monospace;
   --font-family-sans: "Space Grotesk", sans-serif;
-  --mouse-x: 0.5;
-  --mouse-y: 0.5;
 }
 
 html {
@@ -35,7 +28,7 @@ body {
   color: var(--text);
   background: var(--void);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow: hidden;
   line-height: 1.6;
 }
 
@@ -47,10 +40,6 @@ body {
 a {
   color: var(--glow);
   text-decoration: none;
-  transition: color 0.3s;
-}
-a:hover {
-  color: #fff;
 }
 a:focus-visible {
   outline: 2px solid var(--glow);
@@ -58,278 +47,56 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
-   STAR FIELD — deep space background
+   CANVAS — the living organism
    ═══════════════════════════════════════════ */
-.star-field {
+.organism-canvas {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 0;
-  pointer-events: none;
+  cursor: none;
 }
 
-.star-layer {
-  position: absolute;
-  inset: -20%;
-  width: 140%;
-  height: 140%;
-  background-image:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.4), transparent),
-    radial-gradient(1px 1px at 25% 65%, rgba(255,255,255,0.25), transparent),
-    radial-gradient(1.5px 1.5px at 40% 10%, rgba(255,255,255,0.5), transparent),
-    radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 70% 35%, rgba(255,255,255,0.35), transparent),
-    radial-gradient(1.5px 1.5px at 85% 55%, rgba(255,255,255,0.3), transparent),
-    radial-gradient(1px 1px at 15% 90%, rgba(255,255,255,0.15), transparent),
-    radial-gradient(1px 1px at 95% 15%, rgba(255,255,255,0.2), transparent),
-    radial-gradient(1px 1px at 50% 50%, rgba(255,255,255,0.18), transparent),
-    radial-gradient(1.5px 1.5px at 30% 40%, rgba(255,255,255,0.35), transparent),
-    radial-gradient(1px 1px at 65% 75%, rgba(255,255,255,0.12), transparent),
-    radial-gradient(1px 1px at 80% 5%, rgba(255,255,255,0.28), transparent),
-    radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.22), transparent),
-    radial-gradient(1.5px 1.5px at 45% 30%, rgba(255,255,255,0.15), transparent),
-    radial-gradient(1px 1px at 20% 85%, rgba(255,255,255,0.3), transparent);
-  transition: transform 0.3s ease-out;
-}
-
-.star-layer--near {
-  transform: translate(
-    calc((var(--mouse-x) - 0.5) * -20px),
-    calc((var(--mouse-y) - 0.5) * -20px)
-  );
-}
-
-.star-layer--mid {
-  opacity: 0.6;
-  transform: translate(
-    calc((var(--mouse-x) - 0.5) * -10px),
-    calc((var(--mouse-y) - 0.5) * -10px)
-  );
-}
-
-.star-layer--far {
-  opacity: 0.3;
-  transform: translate(
-    calc((var(--mouse-x) - 0.5) * -4px),
-    calc((var(--mouse-y) - 0.5) * -4px)
-  );
+/* Custom cursor — subtle glow dot */
+.organism-canvas:hover {
+  cursor: none;
 }
 
 /* ═══════════════════════════════════════════
-   CONSTELLATION — the graph container
+   INTRO — typewriter + first breath
    ═══════════════════════════════════════════ */
-.constellation {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.graph {
-  position: relative;
-  width: 100%;
-  max-width: 1100px;
-  aspect-ratio: 16 / 10;
-}
-
-/* SVG connections */
-.connections {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.edge {
-  fill: none;
-  stroke: var(--glow-dim);
-  stroke-width: 1;
-  stroke-dasharray: 8 4;
-  animation: edgeBreathe 4s ease-in-out infinite;
-}
-
-.edge--active {
-  stroke: var(--glow-med);
-  stroke-width: 1.5;
-}
-
-@keyframes edgeBreathe {
-  0%, 100% { stroke-dashoffset: 0; opacity: 0.4; }
-  50% { stroke-dashoffset: 12; opacity: 0.8; }
-}
-
-/* ═══════════════════════════════════════════
-   NODES — each point in the constellation
-   ═══════════════════════════════════════════ */
-.node {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 2;
-  cursor: pointer;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.node__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--glow);
-  box-shadow: 0 0 12px var(--glow-med), 0 0 40px var(--glow-dim);
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  animation: nodePulse 3s ease-in-out infinite;
-}
-
-.node:hover .node__dot {
-  width: 14px;
-  height: 14px;
-  box-shadow: 0 0 20px var(--glow-med), 0 0 60px var(--glow-dim);
-}
-
-@keyframes nodePulse {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.15); }
-}
-
-.node__label {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-family-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  white-space: nowrap;
-  transition: color 0.3s;
-  pointer-events: none;
-}
-
-.node:hover .node__label {
-  color: var(--glow);
-}
-
-.node__card {
-  position: absolute;
-  top: calc(100% + 28px);
-  left: 50%;
-  transform: translateX(-50%) scale(0.95);
-  background: rgba(10, 10, 15, 0.95);
-  border: 1px solid var(--glow-med);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  min-width: 220px;
-  max-width: 300px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-}
-
-.node:hover .node__card,
-.node--active .node__card {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-  pointer-events: auto;
-}
-
-.node__card-title {
-  font-family: var(--font-family-sans);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 0.25rem;
-}
-
-.node__card-desc {
-  font-family: var(--font-family-sans);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 0.5rem;
-}
-
-.node__card-link {
-  font-family: var(--font-family-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-}
-
-/* ═══════════════════════════════════════════
-   ROOT NODE — "nikolai onken" center
-   ═══════════════════════════════════════════ */
-.node--root {
-  z-index: 5;
-}
-
-.node--root .node__dot {
-  width: 18px;
-  height: 18px;
-  background: #fff;
-  box-shadow: 0 0 30px var(--glow-med), 0 0 80px var(--glow-dim), 0 0 120px rgba(78, 205, 196, 0.04);
-  animation: rootPulse 5s ease-in-out infinite;
-}
-
-@keyframes rootPulse {
-  0%, 100% { box-shadow: 0 0 30px var(--glow-med), 0 0 80px var(--glow-dim); }
-  50% { box-shadow: 0 0 40px var(--glow-bright), 0 0 100px var(--glow-med); }
-}
-
-.node--root .node__label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.12em;
-}
-
-/* ═══════════════════════════════════════════
-   IDENTITY NODES — special visual treatments
-   ═══════════════════════════════════════════ */
-.node--identity .node__dot {
-  background: var(--glow-warm);
-  box-shadow: 0 0 12px rgba(255, 107, 107, 0.3), 0 0 40px rgba(255, 107, 107, 0.1);
-}
-
-.node--identity:hover .node__dot {
-  box-shadow: 0 0 20px rgba(255, 107, 107, 0.5), 0 0 60px rgba(255, 107, 107, 0.15);
-}
-
-/* ═══════════════════════════════════════════
-   TYPEWRITER — initial name animation
-   ═══════════════════════════════════════════ */
-.typewriter {
+.intro {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: var(--void);
-  transition: opacity 0.8s ease, visibility 0.8s;
+  transition: opacity 1.2s ease, visibility 1.2s;
 }
 
-.typewriter--done {
+.intro--done {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
-.typewriter__text {
+.intro__content {
+  display: flex;
+  align-items: center;
+}
+
+.intro__text {
   font-family: var(--font-family-mono);
   font-size: clamp(1.2rem, 4vw, 2.5rem);
   color: var(--text);
   letter-spacing: 0.06em;
 }
 
-.typewriter__cursor {
+.intro__cursor {
   display: inline-block;
   width: 2px;
   height: 1.1em;
@@ -344,34 +111,27 @@ a:focus-visible {
   50% { opacity: 0; }
 }
 
-/* ═══════════════════════════════════════════
-   AMBIENT GLOW — center radiance
-   ═══════════════════════════════════════════ */
-.ambient-glow {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    ellipse,
-    rgba(78, 205, 196, 0.04) 0%,
-    rgba(78, 205, 196, 0.01) 40%,
-    transparent 70%
-  );
-  pointer-events: none;
-  z-index: 0;
-  animation: ambientShift 60s ease-in-out infinite;
+/* First breath animation — a single particle pulse */
+.intro__breath {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glow);
+  margin-top: 3rem;
+  animation: firstBreath 1.2s ease-in-out;
+  box-shadow: 0 0 20px rgba(78, 205, 196, 0.4), 0 0 60px rgba(78, 205, 196, 0.15);
 }
 
-@keyframes ambientShift {
-  0%, 100% {
-    background: radial-gradient(ellipse, rgba(78, 205, 196, 0.04) 0%, rgba(78, 205, 196, 0.01) 40%, transparent 70%);
-  }
-  50% {
-    background: radial-gradient(ellipse, rgba(196, 149, 106, 0.04) 0%, rgba(196, 149, 106, 0.01) 40%, transparent 70%);
-  }
+@keyframes firstBreath {
+  0% { transform: scale(0); opacity: 0; }
+  30% { transform: scale(1.5); opacity: 1; }
+  60% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 0.6; }
+}
+
+.intro--breathing .intro__cursor {
+  animation: none;
+  opacity: 0.3;
 }
 
 /* ═══════════════════════════════════════════
@@ -387,8 +147,10 @@ a:focus-visible {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-dim);
-  background: none;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(10, 10, 15, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 4px;
   padding: 0.4rem 0.8rem;
   cursor: pointer;
@@ -397,16 +159,16 @@ a:focus-visible {
 
 .audio-toggle:hover {
   color: var(--glow);
-  border-color: var(--glow-dim);
+  border-color: rgba(78, 205, 196, 0.2);
 }
 
 .audio-toggle--active {
   color: var(--glow);
-  border-color: var(--glow-med);
+  border-color: rgba(78, 205, 196, 0.3);
 }
 
 /* ═══════════════════════════════════════════
-   FOOTER — minimal, bottom of space
+   FOOTER
    ═══════════════════════════════════════════ */
 .footer {
   position: fixed;
@@ -421,104 +183,41 @@ a:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
-   RESPONSIVE — mobile constellation → stream
+   SCREEN READER ONLY
+   ═══════════════════════════════════════════ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE
    ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .constellation {
-    align-items: flex-start;
-    padding: 6rem 1.5rem 4rem;
+  body {
+    overflow: hidden;
   }
 
-  .graph {
-    aspect-ratio: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3rem;
-    padding: 0;
-  }
-
-  .connections {
-    display: none;
-  }
-
-  .node {
-    position: relative;
-    top: auto !important;
-    left: auto !important;
-    transform: none;
-    width: 100%;
-    max-width: 320px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .node__label {
-    position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
-    margin-top: 0.5rem;
-  }
-
-  .node__card {
-    position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
-    opacity: 1;
-    pointer-events: auto;
-    margin-top: 0.75rem;
-    min-width: auto;
-    width: 100%;
-  }
-
-  /* Mobile stream connector line */
-  .node::before {
-    content: "";
-    position: absolute;
-    top: -3rem;
-    left: 50%;
-    width: 1px;
-    height: 3rem;
-    background: linear-gradient(to bottom, transparent, var(--glow-dim));
-  }
-
-  .node:first-of-type::before {
-    display: none;
-  }
-
-  .node--root .node__label {
-    font-size: 1rem;
-  }
-
-  .footer {
-    position: relative;
-    text-align: center;
-    padding: 3rem 0 2rem;
-    left: auto;
-    bottom: auto;
+  .organism-canvas {
+    cursor: default;
   }
 
   .audio-toggle {
-    bottom: auto;
-    right: auto;
-    position: relative;
-    margin-top: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .typewriter__text {
-    font-size: 1.1rem;
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 0.6rem;
   }
 
-  .node__card {
-    padding: 0.75rem 1rem;
-  }
-
-  .node__card-title {
-    font-size: 0.85rem;
+  .footer {
+    bottom: 1rem;
+    left: 1rem;
+    font-size: 0.5rem;
   }
 }
