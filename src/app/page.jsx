@@ -203,7 +203,7 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const typewriterRef = useRef(null);
   const audioRef = useRef(null);
-  const [audioOn, setAudioOn] = useState(false);
+  const [audioOn, setAudioOn] = useState(true);
 
   useEffect(() => {
     const cleanupParallax = initParallax();
@@ -218,8 +218,25 @@ export default function Home() {
       });
     }
 
+    // Auto-start audio on first user interaction (required by browser autoplay policy)
+    let audioStarted = false;
+    function startAudio() {
+      if (audioStarted) return;
+      audioStarted = true;
+      if (!audioRef.current) {
+        audioRef.current = initAudio();
+        audioRef.current.toggle(); // enable immediately
+      }
+      document.removeEventListener("click", startAudio);
+      document.removeEventListener("keydown", startAudio);
+    }
+    document.addEventListener("click", startAudio);
+    document.addEventListener("keydown", startAudio);
+
     return () => {
       cleanupParallax();
+      document.removeEventListener("click", startAudio);
+      document.removeEventListener("keydown", startAudio);
       if (typewriterPromise && typewriterPromise.cancel) {
         typewriterPromise.cancel();
       }
