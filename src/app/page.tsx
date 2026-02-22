@@ -16,6 +16,13 @@ export default function Home() {
         />
         <div>
           <span className="author-name">Nikolai Onken</span>
+          <p className="author-tagline">
+            Entrepreneur &amp; engineer. CTO at{" "}
+            <a href="https://asymmetric.financial/">Asymmetric</a>. Building{" "}
+            <a href="https://mintline.ai/">Mintline.ai</a>. Previously VP
+            Engineering at{" "}
+            <a href="https://aws.amazon.com/cloud9/">Cloud9 / AWS</a>.
+          </p>
         </div>
       </div>
 

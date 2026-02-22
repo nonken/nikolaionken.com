@@ -20,11 +20,11 @@ export const metadata: Metadata = {
     default: "nikolaionken.com",
     template: "%s | nikolaionken.com",
   },
-  description: "Entrepreneur",
+  description: "Entrepreneur and engineer. CTO at Asymmetric. Previously VP Engineering at Cloud9 / AWS.",
   metadataBase: new URL("https://nikolaionken.com"),
   openGraph: {
     title: "nikolaionken.com",
-    description: "Entrepreneur",
+    description: "Entrepreneur and engineer. CTO at Asymmetric. Previously VP Engineering at Cloud9 / AWS.",
     url: "https://nikolaionken.com",
     siteName: "nikolaionken.com",
     type: "website",

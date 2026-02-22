@@ -7,31 +7,59 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <article className="page-content projects-section">
-      <h3>Current</h3>
-      <p>
-        <a href="http://www.pixelplant.com/cm/non">PixelPlant</a>{" "}
-        <em>CEO, co-founder</em>
-        <br />
-        <a href="http://www.bonsaijs.org">BonsaiJS</a>{" "}
-        <em>HTML5 graphics</em>
-        <br />
-        <a href="http://uxebu.com">uxebu</a> <em>co-founder</em>
+      <h1>Nikolai Onken</h1>
+
+      <p className="about-intro">
+        Entrepreneur and engineer building at the intersection of finance and
+        technology. Based in Amsterdam. Building software since 1997, from open
+        source JavaScript frameworks to cloud IDEs to crypto infrastructure.
       </p>
 
-      <h3>Previous</h3>
-      <p>
-        <a href="http://www.dojocampus.org">Dojo Campus</a> |{" "}
-        <a href="http://www.dojotoolkit.org">Dojo Toolkit</a>
-        <br />
-        <a href="http://www.rndmgnrtn.com">RNDMGNRTN</a>{" "}
-        <em>computer sounds</em>
-        <br />
-        <a href="http://chordinversion.com">chordinversion.com</a>{" "}
-        <em>Guitar chords</em>
-        <br />
-        <a href="http://cva.ahk.nl">Conservatory of Amsterdam</a>{" "}
-        <em>Teaching music theory to BA students</em>
-      </p>
+      <h3>Current Work</h3>
+      <ul className="work-list">
+        <li>
+          <a href="https://asymmetric.financial/">Asymmetric</a>{" "}
+          <em>CTO &mdash; crypto-focused investment firm</em>
+        </li>
+        <li>
+          <a href="https://mintline.ai/">Mintline.ai</a>{" "}
+          <em>AI-powered financial reconciliation</em>
+        </li>
+      </ul>
+
+      <h3>Previous Work</h3>
+      <ul className="work-list">
+        <li>
+          <a href="https://aws.amazon.com/cloud9/">Cloud9 IDE → AWS</a>{" "}
+          <em>
+            VP Engineering, led the Amsterdam office. Cloud9 was acquired by AWS
+            in 2016
+          </em>
+        </li>
+        <li>
+          <a href="https://nangu.eco/">Nangu.eco</a>{" "}
+          <em>Co-founder</em>
+        </li>
+        <li>
+          <a href="https://baseline.dev/">Baseline.dev</a>
+        </li>
+        <li>
+          <a href="https://saasmanual.com/">SaaS Manual</a>{" "}
+          <em>Learn how to build SaaS products from scratch</em>
+        </li>
+        <li>
+          <a href="http://uxebu.com">uxebu</a>{" "}
+          <em>Co-founder &mdash; web &amp; mobile development consultancy</em>
+        </li>
+        <li>
+          <a href="http://www.bonsaijs.org">BonsaiJS</a>{" "}
+          <em>Open source HTML5 graphics library</em>
+        </li>
+        <li>
+          <a href="https://dojotoolkit.org">Dojo Toolkit</a>{" "}
+          <em>Committer &amp; community evangelist</em>
+        </li>
+      </ul>
     </article>
   );
 }
