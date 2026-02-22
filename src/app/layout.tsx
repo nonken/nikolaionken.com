@@ -39,27 +39,35 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${ptSerif.variable} ${ptSans.variable}`}>
-        <header className="navigation-wrapper">
-          <div className="site-name">
-            <Link href="/">nikolaionken.com</Link>
-          </div>
-          <nav className="top-navigation">
-            <ul>
-              <li>
-                <Link href="/about">About</Link>
-              </li>
-            </ul>
-          </nav>
-        </header>
+        <div className="paper">
+          {/* Registration marks — like a printer's proof sheet */}
+          <span className="corner-mark corner-mark--tl" />
+          <span className="corner-mark corner-mark--tr" />
+          <span className="corner-mark corner-mark--bl" />
+          <span className="corner-mark corner-mark--br" />
 
-        <main id="main" role="main">
-          {children}
-        </main>
+          <header className="navigation-wrapper">
+            <div className="site-name">
+              <Link href="/">nikolaionken.com</Link>
+            </div>
+            <nav className="top-navigation">
+              <ul>
+                <li>
+                  <Link href="/about">About</Link>
+                </li>
+              </ul>
+            </nav>
+          </header>
 
-        <footer className="footer-wrap">
-          <p className="footer-tagline">Code &middot; Build &middot; Create &middot; Explore</p>
-          <h6>&copy; {new Date().getFullYear()} Nikolai Onken.</h6>
-        </footer>
+          <main id="main" role="main">
+            {children}
+          </main>
+
+          <footer className="footer-wrap">
+            <p className="footer-tagline">Code &middot; Build &middot; Create &middot; Explore</p>
+            <h6>&copy; {new Date().getFullYear()} Nikolai Onken</h6>
+          </footer>
+        </div>
       </body>
     </html>
   );
