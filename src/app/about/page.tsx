@@ -31,6 +31,10 @@ export default function AboutPage() {
           <em>CTO &mdash; crypto-focused investment firm</em>
         </li>
         <li>
+          <a href="https://warpmetrics.com/">WarpMetrics</a>{" "}
+          <em>AI-powered coding agents</em>
+        </li>
+        <li>
           <a href="https://mintline.ai/">Mintline.ai</a>{" "}
           <em>AI-powered financial reconciliation</em>
         </li>

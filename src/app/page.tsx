@@ -1,9 +1,4 @@
-import Link from "next/link";
-import { getPublishedPosts } from "@/lib/posts";
-
 export default function Home() {
-  const recentPosts = getPublishedPosts().slice(0, 5);
-
   return (
     <>
       <section className="hero">
@@ -24,29 +19,6 @@ export default function Home() {
           <span className="pillar">Universe</span>
         </div>
       </section>
-
-      {recentPosts.length > 0 && (
-        <>
-          <hr className="section-divider" />
-          <span className="section-label">Recent Writing</span>
-          <ul className="article-list">
-            {recentPosts.map((post) => (
-              <li key={post.slug}>
-                <h2>
-                  <Link href={`/articles/${post.slug}`}>{post.title}</Link>
-                </h2>
-                <p>
-                  {post.description ||
-                    post.content.substring(0, 120).replace(/\s+/g, " ") + "..."}
-                </p>
-              </li>
-            ))}
-          </ul>
-          <Link href="/articles" className="view-all">
-            View all articles
-          </Link>
-        </>
-      )}
     </>
   );
 }
