@@ -95,17 +95,28 @@ export function initAudio() {
 }
 
 export function typewriterEffect(el, text, speed = 80) {
-  return new Promise((resolve) => {
+  let cancelled = false;
+  const timers = [];
+
+  const promise = new Promise((resolve) => {
     let i = 0;
     function type() {
+      if (cancelled) return;
       if (i < text.length) {
         el.textContent = text.slice(0, i + 1);
         i++;
-        setTimeout(type, speed);
+        timers.push(setTimeout(type, speed));
       } else {
-        setTimeout(resolve, 600);
+        timers.push(setTimeout(resolve, 600));
       }
     }
     type();
   });
+
+  promise.cancel = () => {
+    cancelled = true;
+    timers.forEach(clearTimeout);
+  };
+
+  return promise;
 }

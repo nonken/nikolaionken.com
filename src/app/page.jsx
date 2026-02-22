@@ -201,24 +201,33 @@ function getNodePos(id) {
 
 export default function Home() {
   const [ready, setReady] = useState(false);
-  const [showTypewriter, setShowTypewriter] = useState(true);
   const typewriterRef = useRef(null);
   const audioRef = useRef(null);
   const [audioOn, setAudioOn] = useState(false);
 
   useEffect(() => {
-    const cleanup = initParallax();
+    const cleanupParallax = initParallax();
 
     // Typewriter intro
+    let typewriterPromise = null;
     const el = typewriterRef.current;
     if (el) {
-      typewriterEffect(el, "> nikolai onken", 70).then(() => {
+      typewriterPromise = typewriterEffect(el, "> nikolai onken", 70);
+      typewriterPromise.then(() => {
         setReady(true);
-        setTimeout(() => setShowTypewriter(false), 800);
       });
     }
 
-    return cleanup;
+    return () => {
+      cleanupParallax();
+      if (typewriterPromise && typewriterPromise.cancel) {
+        typewriterPromise.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.destroy();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   function toggleAudio() {
