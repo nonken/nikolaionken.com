@@ -13,7 +13,11 @@ export default function Home() {
   const [introPhase, setIntroPhase] = useState("typing"); // typing | breathing | done
   const [discoveredLinks, setDiscoveredLinks] = useState([]);
   const [discoveredLabels, setDiscoveredLabels] = useState([]);
+  const [discoveryCount, setDiscoveryCount] = useState({ discovered: 0, total: MEMORIES.length });
+  const [showHint, setShowHint] = useState(false);
+  const [showAudioHint, setShowAudioHint] = useState(false);
   const audioToggleRef = useRef(null);
+  const hintDismissedRef = useRef(false);
 
   // Typewriter state
   const typewriterRef = useRef(null);
@@ -61,11 +65,30 @@ export default function Home() {
     organismRef.current = org;
     org.start();
 
-    // Listen for discovery changes — update links and labels immediately
+    // Show discovery hint after organism has had time to bloom
+    const hintTimer = setTimeout(() => {
+      if (!hintDismissedRef.current) setShowHint(true);
+    }, 3000);
+    // Auto-dismiss hint after 6 more seconds
+    const hintFadeTimer = setTimeout(() => {
+      setShowHint(false);
+    }, 9000);
+
+    // Listen for discovery changes — update links, labels, and count
     org.onDiscoveryChange(() => {
       const positions = org.getDiscoveredPositions();
       setDiscoveredLinks(positions.filter(p => p.url));
       setDiscoveredLabels(positions);
+      setDiscoveryCount(org.getDiscoveryCount());
+
+      // Dismiss hint on first discovery
+      if (!hintDismissedRef.current) {
+        hintDismissedRef.current = true;
+        setShowHint(false);
+        // Show audio hint after first discovery
+        setShowAudioHint(true);
+        setTimeout(() => setShowAudioHint(false), 4000);
+      }
     });
 
     // Throttled position sync (~100ms) — only updates React state when
@@ -83,6 +106,8 @@ export default function Home() {
     }, 100);
 
     return () => {
+      clearTimeout(hintTimer);
+      clearTimeout(hintFadeTimer);
       clearInterval(syncInterval);
       org.destroy();
       organismRef.current = null;
@@ -169,21 +194,37 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Discovery hint */}
+      {ready && (
+        <div className={`discovery-hint ${showHint ? "discovery-hint--visible" : ""}`}>
+          hover near the bright particles to discover
+        </div>
+      )}
+
       {/* Audio toggle */}
       {ready && (
-        <button
-          ref={audioToggleRef}
-          className={`audio-toggle ${audioOn ? "audio-toggle--active" : ""}`}
-          onClick={toggleAudio}
-          aria-label={audioOn ? "Disable ambient sound" : "Enable ambient sound"}
-        >
-          {audioOn ? "sound: on" : "sound: off"}
-        </button>
+        <div className="audio-toggle-wrap">
+          <button
+            ref={audioToggleRef}
+            className={`audio-toggle ${audioOn ? "audio-toggle--active" : ""} ${showAudioHint ? "audio-toggle--pulse" : ""}`}
+            onClick={toggleAudio}
+            aria-label={audioOn ? "Disable ambient sound" : "Enable ambient sound"}
+          >
+            <span className="audio-toggle__icon">{audioOn ? "\u266B" : "\u266A"}</span>
+            {audioOn ? "sound: on" : "sound: off"}
+          </button>
+          {showAudioHint && <span className="audio-toggle__hint">try sound</span>}
+        </div>
       )}
 
       {/* Footer */}
       <footer className="footer">
         <span>&copy; {new Date().getFullYear()} Nikolai Onken</span>
+        {discoveryCount.discovered > 0 && (
+          <span className="footer__discovery-count">
+            {discoveryCount.discovered} of {discoveryCount.total} discovered
+          </span>
+        )}
         <Link href="/text" className="footer__text-link">[text version]</Link>
       </footer>
     </>
