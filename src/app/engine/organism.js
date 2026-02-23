@@ -426,10 +426,11 @@ export class Organism {
       }
     }
 
-    // Idle detection
-    if (this.input.state.active) {
+    // Idle detection (tour counts as active — don't trigger idle during auto-tour)
+    if (this.input.state.active || this.tourActive) {
       this.idleTimer = 0;
       this.idleTextTimer = 0; // reset idle text timer on any input
+      this.idleTextCooldown = 0; // reset cooldown so it doesn't accumulate across idle periods
       this.isIdle = false;
     } else {
       this.idleTimer += dt;
@@ -718,17 +719,13 @@ export class Organism {
 
         this._formText(node.label);
 
-        // D2: amplified shockwave for first discovery
-        if (isFirstDiscovery && node.particle) {
-          this.memory.shockwaves.push({
-            x: node.particle.x,
-            y: node.particle.y,
-            radius: 0,
-            maxRadius: 600,
-            speed: 400,
-            alpha: 1.0,
-            hue: node.particle.hue,
-          });
+        // D2: amplified shockwave for first discovery — replace the normal
+        // shockwave already pushed by discover() to avoid a double shockwave
+        if (isFirstDiscovery && node.particle && this.memory.shockwaves.length > 0) {
+          const last = this.memory.shockwaves[this.memory.shockwaves.length - 1];
+          last.maxRadius = 600;
+          last.speed = 400;
+          last.alpha = 1.0;
         }
 
         const rx = this.organismRadius * 0.9;
@@ -939,6 +936,8 @@ export class Organism {
       alpha: 0.6,
       hue: node.particle.hue,
     });
+    // Release any active text formation before forming new text
+    if (this.textFormationActive) this._releaseText();
     // Replay text formation + overlay
     this._formText(node.label);
     this.discoveredOverlay = node;

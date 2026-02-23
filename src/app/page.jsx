@@ -51,7 +51,8 @@ export default function Home() {
         secondHintShownRef.current = true;
         setHintText("each bright point holds a memory");
         setShowHint(true);
-        setTimeout(() => setShowHint(false), 6000);
+        const t = setTimeout(() => setShowHint(false), 6000);
+        completeTimers.push(t);
       }
     }, 20000);
 
@@ -66,7 +67,8 @@ export default function Home() {
         hintDismissedRef.current = true;
         setShowHint(false);
         setShowAudioHint(true);
-        setTimeout(() => setShowAudioHint(false), 4000);
+        const t = setTimeout(() => setShowAudioHint(false), 4000);
+        completeTimers.push(t);
       }
     });
 
@@ -118,8 +120,10 @@ export default function Home() {
     if (nearest) {
       const node = org.memory.nodes.get(nearest);
       if (node?.discovered && node?.url) {
+        e.stopPropagation();
         window.open(node.url, "_blank", "noopener,noreferrer");
       } else if (node?.discovered) {
+        e.stopPropagation();
         org.revisitNode(nearest);
       }
     }
