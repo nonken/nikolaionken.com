@@ -34,9 +34,17 @@ export class Organism {
     this.breathPhase = 0;
     this.centerX = canvas.width / 2;
     this.centerY = canvas.height / 2;
-    // Constellation uses much larger radius — fills 90% of screen
+    // Full-screen layout — use separate X/Y radii for edge-to-edge spread
     this.organismRadius = Math.min(canvas.width, canvas.height) * 0.42;
     this.baseOrganismRadius = this.organismRadius;
+    // Text formation hold timer (auto-release after hold)
+    this.textHoldTimer = 0;
+    this.textHoldDuration = 3000; // hold text for 3s then release
+    // Text formation age (for progressive force ramping)
+    this.textFormationAge = 0;
+    // Nebula clouds
+    this.nebulae = [];
+    this._nebulaSeeded = false;
     this.running = false;
     this.lastFrame = 0;
     this.rafId = null;
@@ -153,20 +161,24 @@ export class Organism {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.centerX = w / 2;
     this.centerY = h / 2;
-    this.baseOrganismRadius = Math.min(w, h) * 0.42;
+    // Edge-to-edge: use max dimension so nodes fill the screen
+    this.baseOrganismRadius = Math.max(w, h) * 0.42;
     this.organismRadius = this.baseOrganismRadius;
 
     // Star field
     if (this.starField) {
       this.starField.resize(w, h);
     } else {
-      this.starField = new StarField(w, h, 280);
+      this.starField = new StarField(w, h);
     }
 
-    // Recompute anchors
+    // Seed nebulae on first resize or regenerate on significant size change
+    this._seedNebulae(w, h);
+
+    // Recompute anchors — use separate X/Y radii for proper aspect ratio coverage
     if (this.memory && this.memoriesPlaced) {
-      const rx = this.organismRadius * 0.9;
-      const ry = this.organismRadius * 0.75;
+      const rx = w * 0.42;
+      const ry = h * 0.40;
       this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
     }
   }
@@ -267,9 +279,11 @@ export class Organism {
     if (this.birthIndex >= MEMORIES.length) {
       this.birthPhase = "alive";
       this.memoriesPlaced = true;
-      // Compute constellation layout now that all memories exist
-      const rx = this.organismRadius * 0.9;
-      const ry = this.organismRadius * 0.75;
+      // Compute constellation layout with full-screen radii
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const rx = w * 0.42;
+      const ry = h * 0.40;
       this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
       return;
     }
@@ -280,8 +294,10 @@ export class Organism {
     // Use the pre-computed constellation positions
     const node = this.memory.nodes.get(mem.id);
     // Compute a temporary target for birth animation
-    const rx = this.organismRadius * 0.9;
-    const ry = this.organismRadius * 0.75;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const rx = w * 0.42;
+    const ry = h * 0.40;
     this.memory.computeConstellationLayout(this.centerX, this.centerY, rx, ry);
 
     const targetX = node.anchorX || this.centerX;
@@ -381,6 +397,22 @@ export class Organism {
       this.music.setMood(this.profile.musicMood);
     }
 
+    // Update star field (shooting stars, etc.)
+    if (this.starField) {
+      this.starField.update(dt);
+    }
+
+    // Update nebula drift
+    for (const neb of this.nebulae) {
+      neb.x += neb.vx * dt * 0.001;
+      neb.y += neb.vy * dt * 0.001;
+      // Gentle wrap
+      if (neb.x < -neb.r) neb.x = w + neb.r;
+      if (neb.x > w + neb.r) neb.x = -neb.r;
+      if (neb.y < -neb.r) neb.y = h + neb.r;
+      if (neb.y > h + neb.r) neb.y = -neb.r;
+    }
+
     // Parallax from cursor position
     if (this.input.state.active) {
       const mx = (this.input.state.x / window.innerWidth - 0.5) * 2;
@@ -465,8 +497,8 @@ export class Organism {
       }
     }
 
-    // ── Idle text formation (B1) ──
-    if (this.isIdle && this.memoriesPlaced && this.introPhase === "ready") {
+    // ── Idle text formation (B1) — with auto-release ──
+    if (this.isIdle && this.memoriesPlaced && this.introPhase === "ready" && !this.tourActive) {
       this.idleTextTimer += dt;
       this.idleTextCooldown -= dt;
       if (this.idleTextTimer > 8000 && this.idleTextCooldown <= 0 && !this.textFormationActive && this.textReleaseTimer <= 0) {
@@ -477,6 +509,7 @@ export class Organism {
           const label = labels[this.idleTextIndex % labels.length];
           this.idleTextIndex++;
           this._formText(label);
+          this.textHoldTimer = 0; // start hold timer
           this.discoveredOverlay = { label, desc: null };
           this.overlayFade = 1.0;
           this.music.playMelody(stringToMelody(label));
@@ -642,11 +675,20 @@ export class Organism {
         p.addForce(gx, gy);
       }
 
-      // Text formation targets
+      // Text formation targets with convergence damping
       if (p.targetX !== null && p.targetForce > 0) {
         const tx = p.targetX - p.x;
         const ty = p.targetY - p.y;
+        const tDist = Math.sqrt(tx * tx + ty * ty);
         p.addForce(tx * p.targetForce, ty * p.targetForce);
+        // Extra velocity damping when close — kills wobble
+        if (tDist < 8) {
+          const dampFactor = 0.85;
+          const vx = (p.x - p.px) * dampFactor;
+          const vy = (p.y - p.py) * dampFactor;
+          p.px = p.x - vx;
+          p.py = p.y - vy;
+        }
       }
 
       // Shockwave push
@@ -728,8 +770,8 @@ export class Organism {
           last.alpha = 1.0;
         }
 
-        const rx = this.organismRadius * 0.9;
-        const ry = this.organismRadius * 0.75;
+        const rx = window.innerWidth * 0.42;
+        const ry = window.innerHeight * 0.40;
         this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
 
         if (this._onDiscoveryChange) this._onDiscoveryChange();
@@ -744,6 +786,25 @@ export class Organism {
       }
       if (this.overlayFade < 0) {
         this.overlayFade = 0;
+      }
+    }
+
+    // Auto-release text after hold duration
+    if (this.textFormationActive) {
+      this.textHoldTimer += dt;
+      this.textFormationAge += dt;
+      // Progressive force ramp: 0.03 → 0.06 over 500ms for crisp convergence
+      const rampT = Math.min(1, this.textFormationAge / 500);
+      const baseForce = 0.03 + rampT * 0.03;
+      for (const p of this.textFormationTargets) {
+        // Extra damping when close to target — reduces wobble
+        const dx = (p.targetX || 0) - p.x;
+        const dy = (p.targetY || 0) - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        p.targetForce = dist < 5 ? baseForce * 1.5 : baseForce;
+      }
+      if (this.textHoldTimer > this.textHoldDuration) {
+        this._startGracefulRelease();
       }
     }
 
@@ -1056,6 +1117,8 @@ export class Organism {
     this.textFormationActive = true;
     this.textFormationTargets = [];
     this.textReleaseTimer = 0;
+    this.textFormationAge = 0;
+    this.textHoldTimer = 0;
 
     for (let i = 0; i < usable; i++) {
       const p = available[i];
@@ -1099,15 +1162,23 @@ export class Organism {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // ── Star field (background parallax layer) ──
+    // ── Star field (multi-layer parallax) ──
     if (this.starField && (this.introPhase !== "genesis")) {
-      const starCanvas = this.starField.render(this.time * 0.001);
-      const px = this.parallaxX * 0.1;
-      const py = this.parallaxY * 0.1;
-      ctx.globalAlpha = this.introPhase === "burst" ? Math.min(1, this.introTimer / 1000) : 1;
-      ctx.drawImage(starCanvas, px, py);
+      const result = this.starField.render(this.time * 0.001, this.parallaxX, this.parallaxY);
+      const introAlpha = this.introPhase === "burst" ? Math.min(1, this.introTimer / 1000) : 1;
+      ctx.globalAlpha = introAlpha;
+      for (let li = 0; li < result.layers.length; li++) {
+        const px = this.parallaxX * result.parallaxes[li];
+        const py = this.parallaxY * result.parallaxes[li];
+        ctx.drawImage(result.layers[li], px, py);
+      }
+      // Shooting stars on top of star layers
+      this.starField.drawShootingStars(ctx);
       ctx.globalAlpha = 1;
     }
+
+    // ── Nebula clouds ──
+    this._drawNebulae(ctx, w, h);
 
     // ── Intro genesis point ──
     if (this.introPhase === "genesis") {
@@ -1256,6 +1327,18 @@ export class Organism {
       const p = particles[i];
       if (!isFinite(p.x) || !isFinite(p.y) || p.radius <= 0) continue;
 
+      // Snap rendering: when particle is near its text target, use target position for rendering
+      let drawX = p.x;
+      let drawY = p.y;
+      if (p.targetX !== null && p.targetForce > 0) {
+        const dx = p.targetX - p.x;
+        const dy = p.targetY - p.y;
+        if (dx * dx + dy * dy < 4) { // within 2px
+          drawX = p.targetX;
+          drawY = p.targetY;
+        }
+      }
+
       // Trail
       if (p.trail.length > 1) {
         ctx.beginPath();
@@ -1268,34 +1351,32 @@ export class Organism {
         ctx.stroke();
       }
 
-      // Glow
+      // Glow (using drawX/drawY for snap rendering)
       if (p.isMemory) {
         const node = this.memory.nodes.get(p.memoryId);
         const isIdentity = node?.type === "identity";
 
         if (isIdentity && node?.discovered) {
-          // Identity nodes: diffuse nebula cloud
           const nebulaR = Math.max(0.001, p.radius * 12);
-          const nebulaGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nebulaR);
+          const nebulaGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, nebulaR);
           nebulaGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.15})`);
           nebulaGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation - 10}%, ${p.lightness - 10}%, ${p.alpha * p.life * 0.06})`);
           nebulaGlow.addColorStop(1, "transparent");
           ctx.fillStyle = nebulaGlow;
-          ctx.fillRect(p.x - nebulaR, p.y - nebulaR, nebulaR * 2, nebulaR * 2);
+          ctx.fillRect(drawX - nebulaR, drawY - nebulaR, nebulaR * 2, nebulaR * 2);
         } else {
-          // Work/root nodes: brighter focused glow
           const glowSize = Math.max(0.001, p.radius * 8);
-          const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
+          const particleGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, glowSize);
           particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
           particleGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.1})`);
           particleGlow.addColorStop(1, "transparent");
           ctx.fillStyle = particleGlow;
-          ctx.fillRect(p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+          ctx.fillRect(drawX - glowSize, drawY - glowSize, glowSize * 2, glowSize * 2);
         }
       } else if (glowSprite) {
         const spriteSize = p.radius * 3;
         ctx.globalAlpha = p.alpha * p.life * 0.3;
-        ctx.drawImage(glowSprite, p.x - spriteSize, p.y - spriteSize, spriteSize * 2, spriteSize * 2);
+        ctx.drawImage(glowSprite, drawX - spriteSize, drawY - spriteSize, spriteSize * 2, spriteSize * 2);
         ctx.globalAlpha = 1;
       }
 
@@ -1303,7 +1384,7 @@ export class Organism {
       const breathScale = p.isMemory ? 1 + Math.sin(p.breathPhase + this.breathPhase * 3) * 0.15 : 1;
       const r = p.radius * breathScale;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, r, 0, TWO_PI);
+      ctx.arc(drawX, drawY, r, 0, TWO_PI);
       ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 15}%, ${p.alpha * p.life})`;
       ctx.fill();
 
@@ -1315,7 +1396,7 @@ export class Organism {
         const isFocused = this.focusedMemoryIndex >= 0 && this.memoryIds[this.focusedMemoryIndex] === p.memoryId;
         if (isFocused) {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius * 3.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, p.radius * 3.5, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, 0.8)`;
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -1324,7 +1405,7 @@ export class Organism {
         if (node?.discovered) {
           // Discovered: solid ring
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius * 2.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, p.radius * 2.5, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0.6)`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
@@ -1332,7 +1413,7 @@ export class Organism {
           if (node.resonancePulse > 0) {
             const pulseR = p.radius * (3 + (1 - node.resonancePulse) * 8);
             ctx.beginPath();
-            ctx.arc(p.x, p.y, pulseR, 0, TWO_PI);
+            ctx.arc(drawX, drawY, pulseR, 0, TWO_PI);
             ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, ${node.resonancePulse * 0.5})`;
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -1348,19 +1429,19 @@ export class Organism {
           const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5;
 
           ctx.beginPath();
-          ctx.arc(p.x, p.y, pulseRadius, 0, TWO_PI);
+          ctx.arc(drawX, drawY, pulseRadius, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${pulseAlpha})`;
           ctx.lineWidth = isWarming ? 1.2 : 0.6 + flicker * 0.3;
           ctx.stroke();
 
-          // Approach: gravitational lensing — attract nearby star field visually
+          // Approach: gravitational lensing
           if (node.approachGlow > 0.1) {
             const lensR = 30 + node.approachGlow * 25;
-            const lensGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(0.001, lensR));
+            const lensGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, Math.max(0.001, lensR));
             lensGlow.addColorStop(0, `hsla(${p.hue}, 60%, 70%, ${node.approachGlow * 0.15})`);
             lensGlow.addColorStop(1, "transparent");
             ctx.fillStyle = lensGlow;
-            ctx.fillRect(p.x - lensR, p.y - lensR, lensR * 2, lensR * 2);
+            ctx.fillRect(drawX - lensR, drawY - lensR, lensR * 2, lensR * 2);
           }
 
           // Warming label preview
@@ -1369,7 +1450,7 @@ export class Organism {
             ctx.font = `500 10px "Space Grotesk", sans-serif`;
             ctx.textAlign = "center";
             ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 20}%, 0.5)`;
-            ctx.fillText(node.label, p.x, p.y - 20);
+            ctx.fillText(node.label, drawX, drawY - 20);
             ctx.globalAlpha = 1;
           }
         }
@@ -1452,43 +1533,98 @@ export class Organism {
     }
   }
 
+  // ── Nebula cloud system ──
+
+  _seedNebulae(w, h) {
+    this.nebulae = [];
+    const count = 4 + Math.floor(Math.random() * 3); // 4-6 nebulae
+    for (let i = 0; i < count; i++) {
+      const hueOffset = (Math.random() - 0.5) * 60; // ±30 from primary
+      this.nebulae.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 200 + Math.random() * 350,
+        hue: (this.profile.primary.h + hueOffset + 360) % 360,
+        sat: 20 + Math.random() * 30,
+        alpha: 0.015 + Math.random() * 0.025, // very subtle: 1.5-4%
+        vx: (Math.random() - 0.5) * 2, // slow drift
+        vy: (Math.random() - 0.5) * 1.5,
+      });
+    }
+    this._nebulaSeeded = true;
+  }
+
+  _drawNebulae(ctx, w, h) {
+    for (const neb of this.nebulae) {
+      const r = Math.max(0.001, neb.r);
+      const grad = ctx.createRadialGradient(neb.x, neb.y, 0, neb.x, neb.y, r);
+      grad.addColorStop(0, `hsla(${neb.hue}, ${neb.sat}%, 50%, ${neb.alpha})`);
+      grad.addColorStop(0.4, `hsla(${neb.hue}, ${neb.sat - 5}%, 40%, ${neb.alpha * 0.5})`);
+      grad.addColorStop(1, "transparent");
+      ctx.fillStyle = grad;
+      ctx.fillRect(neb.x - r, neb.y - r, r * 2, r * 2);
+    }
+  }
+
+  // ── Upgraded stellar core with lens flare, variable corona, chromatic bloom ──
+
   _drawStellarCore(ctx, x, y) {
-    // Multi-layered core glow
     const coreSize = 25;
     const breathPulse = 1 + Math.sin(this.breathPhase * 1.5) * 0.08;
     const size = coreSize * breathPulse;
 
-    // Outer halo
-    const haloR = size * 3;
+    // Outer halo — larger and more layered
+    const haloR = size * 4;
     const halo = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.001, haloR));
-    halo.addColorStop(0, `hsla(${this.profile.accent.h}, 70%, 80%, 0.08)`);
-    halo.addColorStop(0.4, `hsla(${this.profile.primary.h}, 60%, 60%, 0.03)`);
+    halo.addColorStop(0, `hsla(${this.profile.accent.h}, 70%, 80%, 0.1)`);
+    halo.addColorStop(0.25, `hsla(${this.profile.accent.h}, 60%, 70%, 0.05)`);
+    halo.addColorStop(0.5, `hsla(${this.profile.primary.h}, 60%, 60%, 0.02)`);
     halo.addColorStop(1, "transparent");
     ctx.fillStyle = halo;
     ctx.fillRect(x - haloR, y - haloR, haloR * 2, haloR * 2);
 
-    // Corona rays (slowly rotating spokes)
-    const rayCount = 6;
+    // Variable corona rays — each ray has independent pulse
+    const rayCount = 8;
     for (let i = 0; i < rayCount; i++) {
       const angle = this.coronaAngle + (i / rayCount) * TWO_PI;
-      const rayLen = size * 1.8 + Math.sin(this.breathPhase * 2 + i) * size * 0.3;
+      // Each ray pulses at its own frequency
+      const rayPulse = Math.sin(this.breathPhase * (1.5 + i * 0.3) + i * 1.7);
+      const rayLen = size * (1.5 + rayPulse * 0.8);
       const rx = x + Math.cos(angle) * rayLen;
       const ry = y + Math.sin(angle) * rayLen;
+      const rayAlpha = 0.1 + rayPulse * 0.06;
 
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(rx, ry);
-      ctx.strokeStyle = `hsla(${this.profile.accent.h}, 70%, 75%, 0.15)`;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = `hsla(${this.profile.accent.h}, 70%, 75%, ${rayAlpha})`;
+      ctx.lineWidth = 1 + rayPulse * 0.5;
       ctx.stroke();
     }
 
-    // Inner core glow
-    const innerR = size * 1.2;
+    // Lens flare — 2-3 hexagonal artifacts along a fixed axis
+    const flareAngle = 0.7; // fixed axis
+    for (let i = 1; i <= 3; i++) {
+      const fd = size * (2.5 + i * 1.8);
+      const fx = x + Math.cos(flareAngle) * fd;
+      const fy = y + Math.sin(flareAngle) * fd;
+      const fr = Math.max(0.001, size * (0.3 + i * 0.15));
+      const fa = 0.04 - i * 0.008;
+      if (fa <= 0) continue;
+      const flare = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+      flare.addColorStop(0, `hsla(${(this.profile.accent.h + i * 20) % 360}, 50%, 80%, ${fa})`);
+      flare.addColorStop(1, "transparent");
+      ctx.fillStyle = flare;
+      ctx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
+    }
+
+    // Chromatic bloom — white-hot center fading to primary color at edge
+    const innerR = size * 1.4;
     const inner = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.001, innerR));
-    inner.addColorStop(0, `hsla(${this.profile.accent.h}, 50%, 95%, 0.6)`);
-    inner.addColorStop(0.3, `hsla(${this.profile.accent.h}, 60%, 80%, 0.25)`);
-    inner.addColorStop(0.7, `hsla(${this.profile.primary.h}, 70%, 60%, 0.08)`);
+    inner.addColorStop(0, `hsla(0, 0%, 98%, 0.7)`); // white-hot center
+    inner.addColorStop(0.15, `hsla(${this.profile.accent.h}, 40%, 95%, 0.5)`);
+    inner.addColorStop(0.4, `hsla(${this.profile.accent.h}, 60%, 80%, 0.2)`);
+    inner.addColorStop(0.7, `hsla(${this.profile.primary.h}, 70%, 60%, 0.06)`);
     inner.addColorStop(1, "transparent");
     ctx.fillStyle = inner;
     ctx.fillRect(x - innerR, y - innerR, innerR * 2, innerR * 2);
@@ -1526,8 +1662,8 @@ export class Organism {
           this.overlayFade = 1.0;
           this._formText(node.label);
         }
-        const rx = this.organismRadius * 0.9;
-        const ry = this.organismRadius * 0.75;
+        const rx = window.innerWidth * 0.42;
+        const ry = window.innerHeight * 0.40;
         this.memory.computeAnchors(this.centerX, this.centerY, rx, ry);
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       } else if (node?.discovered && node?.url) {

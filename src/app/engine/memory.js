@@ -139,24 +139,24 @@ export class MemorySystem {
     }
 
     // Work nodes: chronological spiral from outer (oldest) to inner (newest)
+    // Spread wider across screen — 30-90% of radius
     const workCount = workNodes.length;
     for (let i = 0; i < workCount; i++) {
       const node = this.nodes.get(workNodes[i].id);
       if (!node) continue;
-      // Outer (0.85) to inner (0.25) as index increases (newer = closer to center)
       const t = workCount > 1 ? i / (workCount - 1) : 0.5;
-      const r = (0.85 - t * 0.6); // 0.85 → 0.25
+      const r = (0.90 - t * 0.60); // 0.90 → 0.30
       const angle = i * GOLDEN_ANGLE;
       node.anchorX = centerX + Math.cos(angle) * radiusX * r;
       node.anchorY = centerY + Math.sin(angle) * radiusY * r;
     }
 
-    // Identity nodes: cardinal positions in outer ring
+    // Identity nodes: pushed to far edges (85-95% radius)
     for (const m of identityNodes) {
       const node = this.nodes.get(m.id);
       if (!node) continue;
       const angle = IDENTITY_ANGLES[m.id] ?? Math.random() * Math.PI * 2;
-      const r = 0.7 + Math.random() * 0.15; // 70-85% radius
+      const r = 0.85 + Math.random() * 0.10; // 85-95% radius
       node.anchorX = centerX + Math.cos(angle) * radiusX * r;
       node.anchorY = centerY + Math.sin(angle) * radiusY * r;
     }
