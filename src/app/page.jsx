@@ -15,8 +15,13 @@ export default function Home() {
   const [discoveryCount, setDiscoveryCount] = useState({ discovered: 0, total: MEMORIES.length });
   const [showHint, setShowHint] = useState(false);
   const [showAudioHint, setShowAudioHint] = useState(false);
+  const [hintText, setHintText] = useState("hover near the bright particles to discover");
+  const [constellationComplete, setConstellationComplete] = useState(false);
+  const [showCompleteMsg, setShowCompleteMsg] = useState(false);
+  const [showCircadianHint, setShowCircadianHint] = useState(false);
   const audioToggleRef = useRef(null);
   const hintDismissedRef = useRef(false);
+  const secondHintShownRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,6 +44,16 @@ export default function Home() {
       setShowHint(false);
     }, 16000);
 
+    // D1: Progressive second hint if user hasn't discovered anything by 20s
+    const secondHintTimer = setTimeout(() => {
+      if (!hintDismissedRef.current && !secondHintShownRef.current) {
+        secondHintShownRef.current = true;
+        setHintText("each bright point holds a memory");
+        setShowHint(true);
+        setTimeout(() => setShowHint(false), 6000);
+      }
+    }, 20000);
+
     // Discovery changes
     org.onDiscoveryChange(() => {
       const positions = org.getDiscoveredPositions();
@@ -52,6 +67,18 @@ export default function Home() {
         setShowAudioHint(true);
         setTimeout(() => setShowAudioHint(false), 4000);
       }
+    });
+
+    // C1: Constellation complete callback
+    org.onConstellationComplete(() => {
+      setConstellationComplete(true);
+      setShowCompleteMsg(true);
+      setTimeout(() => setShowCompleteMsg(false), 5000);
+      // C2: Show circadian hint after completion celebration
+      setTimeout(() => {
+        setShowCircadianHint(true);
+        setTimeout(() => setShowCircadianHint(false), 6000);
+      }, 6000);
     });
 
     // Throttled position sync
@@ -69,10 +96,29 @@ export default function Home() {
     return () => {
       clearTimeout(hintTimer);
       clearTimeout(hintFadeTimer);
+      clearTimeout(secondHintTimer);
       clearInterval(syncInterval);
       org.destroy();
       organismRef.current = null;
     };
+  }, []);
+
+  // A3: Click on canvas to revisit discovered nodes
+  const handleCanvasClick = useCallback((e) => {
+    const org = organismRef.current;
+    if (!org) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const nearest = org.findNearestNode(x, y, 50);
+    if (nearest) {
+      const node = org.memory.nodes.get(nearest);
+      if (node?.discovered && node?.url) {
+        window.open(node.url, "_blank", "noopener,noreferrer");
+      } else if (node?.discovered) {
+        org._revisitNode(nearest);
+      }
+    }
   }, []);
 
   const toggleAudio = useCallback(() => {
@@ -92,7 +138,8 @@ export default function Home() {
       <canvas
         ref={canvasRef}
         className="organism-canvas"
-        aria-label="Interactive particle constellation — move cursor to explore, dwell near bright particles to discover content. Use arrow keys to navigate between nodes, Enter to reveal."
+        onClick={handleCanvasClick}
+        aria-label="Interactive particle constellation — move cursor to explore, dwell near bright particles to discover content. Use arrow keys to navigate between nodes, Enter to reveal. After all nodes discovered, press Space for a guided tour."
       />
 
       {/* DOM labels for discovered memories (crisp text over canvas) */}
@@ -146,7 +193,21 @@ export default function Home() {
       {/* Discovery hint — only shows after intro */}
       {introComplete && (
         <div className={`discovery-hint ${showHint ? "discovery-hint--visible" : ""}`}>
-          hover near the bright particles to discover
+          {hintText}
+        </div>
+      )}
+
+      {/* C1: Constellation complete message */}
+      {showCompleteMsg && (
+        <div className="discovery-hint discovery-hint--visible discovery-hint--complete">
+          constellation complete
+        </div>
+      )}
+
+      {/* C2: Circadian hint after completion */}
+      {showCircadianHint && (
+        <div className="discovery-hint discovery-hint--visible discovery-hint--circadian">
+          the constellation changes with the time of day
         </div>
       )}
 
@@ -169,9 +230,14 @@ export default function Home() {
       {/* Minimal footer — satellite style */}
       <footer className="footer">
         <span className="footer__copyright">&copy; {new Date().getFullYear()} Nikolai Onken</span>
-        {discoveryCount.discovered > 0 && (
+        {discoveryCount.discovered > 0 && !constellationComplete && (
           <span className="footer__discovery-count">
             {discoveryCount.discovered}/{discoveryCount.total}
+          </span>
+        )}
+        {constellationComplete && (
+          <span className="footer__tour-hint">
+            space: tour
           </span>
         )}
         <Link href="/text" className="footer__text-link">[text]</Link>

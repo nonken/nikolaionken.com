@@ -20,7 +20,8 @@ export function stringToMelody(str) {
 }
 
 /* Sample text as particle positions using offscreen canvas */
-export function textToPositions(text, fontSize, maxWidth, maxHeight) {
+export function textToPositions(text, fontSize, maxWidth, maxHeight, step) {
+  const s = step || 3;
   const canvas = document.createElement("canvas");
   canvas.width = maxWidth;
   canvas.height = maxHeight;
@@ -33,10 +34,9 @@ export function textToPositions(text, fontSize, maxWidth, maxHeight) {
 
   const imageData = ctx.getImageData(0, 0, maxWidth, maxHeight);
   const positions = [];
-  const step = 3;
 
-  for (let y = 0; y < maxHeight; y += step) {
-    for (let x = 0; x < maxWidth; x += step) {
+  for (let y = 0; y < maxHeight; y += s) {
+    for (let x = 0; x < maxWidth; x += s) {
       const i = (y * maxWidth + x) * 4;
       if (imageData.data[i + 3] > 128) {
         positions.push({ x, y });
@@ -101,6 +101,7 @@ export class MemorySystem {
         flickerPhase: Math.random() * Math.PI * 2,
         flickerSpeed: 0.8 + Math.random() * 1.5,
         approachGlow: 0, // 0-1: how close cursor is (gravitational lensing)
+        resonancePulse: 0, // 0-1: pulse intensity for post-completion resonance
       });
     }
   }
@@ -279,6 +280,17 @@ export class MemorySystem {
     });
   }
 
+  pulseConnected(id) {
+    const connections = _connectionMap.get(id);
+    if (!connections) return;
+    for (const connId of connections) {
+      const node = this.nodes.get(connId);
+      if (node?.discovered) {
+        node.resonancePulse = 1.0;
+      }
+    }
+  }
+
   update(dt) {
     // Update temporary connection trails
     for (let i = this.connectionTrails.length - 1; i >= 0; i--) {
@@ -288,11 +300,15 @@ export class MemorySystem {
       }
     }
 
-    // Update node pulse/flicker
+    // Update node pulse/flicker and resonance decay
     for (const [, node] of this.nodes) {
       if (!node.discovered) {
         node.pulsePhase += dt * 0.002;
         node.flickerPhase += dt * 0.001 * node.flickerSpeed;
+      }
+      if (node.resonancePulse > 0) {
+        node.resonancePulse -= dt * 0.001; // decay over ~1s
+        if (node.resonancePulse < 0) node.resonancePulse = 0;
       }
     }
 
