@@ -34,8 +34,8 @@ export class Organism {
     this.breathPhase = 0;
     this.centerX = canvas.width / 2;
     this.centerY = canvas.height / 2;
-    // Full-screen layout — use separate X/Y radii for edge-to-edge spread
-    this.organismRadius = Math.min(canvas.width, canvas.height) * 0.42;
+    // Full-screen layout — use max dimension so nodes fill the screen (matches resize())
+    this.organismRadius = Math.max(canvas.width, canvas.height) * 0.42;
     this.baseOrganismRadius = this.organismRadius;
     // Text formation hold timer (auto-release after hold)
     this.textHoldTimer = 0;
@@ -403,14 +403,16 @@ export class Organism {
     }
 
     // Update nebula drift
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
     for (const neb of this.nebulae) {
       neb.x += neb.vx * dt * 0.001;
       neb.y += neb.vy * dt * 0.001;
       // Gentle wrap
-      if (neb.x < -neb.r) neb.x = w + neb.r;
-      if (neb.x > w + neb.r) neb.x = -neb.r;
-      if (neb.y < -neb.r) neb.y = h + neb.r;
-      if (neb.y > h + neb.r) neb.y = -neb.r;
+      if (neb.x < -neb.r) neb.x = vw + neb.r;
+      if (neb.x > vw + neb.r) neb.x = -neb.r;
+      if (neb.y < -neb.r) neb.y = vh + neb.r;
+      if (neb.y > vh + neb.r) neb.y = -neb.r;
     }
 
     // Parallax from cursor position

@@ -328,14 +328,16 @@ export class StarField {
         this._renderMilkyWay(ctx);
       }
 
-      // Non-bright stars at their base alpha (no twinkle)
+      // Non-bright stars at reduced alpha so twinkle can modulate above AND below
       const layer = this.layers[li];
+      const twinkleRange = 0.15; // must match _renderTwinkle delta range
       for (let i = 0; i < layer.stars.length; i++) {
         const s = layer.stars[i];
         if (s.bright) continue; // bright stars go in twinkle layer only
+        const staticAlpha = Math.max(0, s.baseAlpha - twinkleRange);
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${s.baseAlpha})`;
+        ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${staticAlpha})`;
         ctx.fill();
       }
     }
@@ -379,19 +381,31 @@ export class StarField {
   }
 
   _spawnShootingStar() {
-    const angle = Math.random() * Math.PI * 2;
     const speed = 300 + Math.random() * 400;
     const edge = Math.random();
-    let x, y;
-    if (edge < 0.25) { x = 0; y = Math.random() * this.h; }
-    else if (edge < 0.5) { x = this.w; y = Math.random() * this.h; }
-    else if (edge < 0.75) { x = Math.random() * this.w; y = 0; }
-    else { x = Math.random() * this.w; y = this.h; }
+    let x, y, baseAngle;
+    if (edge < 0.25) {
+      // Left edge — angle points rightward (roughly -π/4 to π/4)
+      x = 0; y = Math.random() * this.h;
+      baseAngle = (Math.random() - 0.5) * Math.PI * 0.5;
+    } else if (edge < 0.5) {
+      // Right edge — angle points leftward (roughly 3π/4 to 5π/4)
+      x = this.w; y = Math.random() * this.h;
+      baseAngle = Math.PI + (Math.random() - 0.5) * Math.PI * 0.5;
+    } else if (edge < 0.75) {
+      // Top edge — angle points downward (roughly π/4 to 3π/4)
+      x = Math.random() * this.w; y = 0;
+      baseAngle = Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 0.5;
+    } else {
+      // Bottom edge — angle points upward (roughly -3π/4 to -π/4)
+      x = Math.random() * this.w; y = this.h;
+      baseAngle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 0.5;
+    }
 
     this.shootingStars.push({
       x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
+      vx: Math.cos(baseAngle) * speed,
+      vy: Math.sin(baseAngle) * speed,
       age: 0,
       lifetime: 600 + Math.random() * 600,
       trailLen: 80 + Math.random() * 120,
@@ -458,19 +472,18 @@ export class StarField {
           ctx.fillStyle = glow;
           ctx.fillRect(s.x - glowR, s.y - glowR, glowR * 2, glowR * 2);
         } else {
-          // Non-bright: only draw twinkle delta (additive alpha variation)
-          const deltaAlpha = twinkle * 0.15;
-          if (Math.abs(deltaAlpha) < 0.02) continue; // skip negligible changes
-          const a = Math.min(1, Math.max(0, s.baseAlpha + deltaAlpha)) - s.baseAlpha;
-          if (Math.abs(a) < 0.01) continue;
-          // For positive delta, draw additive; for negative, we rely on
-          // the composite being static + twinkle (twinkle just adds brightness)
-          if (a > 0) {
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-            ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a})`;
-            ctx.fill();
-          }
+          // Non-bright: draw twinkle delta relative to the reduced static alpha.
+          // Static canvas draws at (baseAlpha - 0.15), so twinkle layer adds
+          // the remaining amount to reach the full computed alpha.
+          const twinkleRange = 0.15;
+          const fullAlpha = Math.min(1, Math.max(0, s.baseAlpha + twinkle * twinkleRange));
+          const staticAlpha = Math.max(0, s.baseAlpha - twinkleRange);
+          const a = fullAlpha - staticAlpha;
+          if (a < 0.01) continue; // skip negligible
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a})`;
+          ctx.fill();
         }
       }
     }
