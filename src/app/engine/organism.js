@@ -798,8 +798,8 @@ export class Organism {
       const baseForce = 0.03 + rampT * 0.03;
       for (const p of this.textFormationTargets) {
         // Extra damping when close to target — reduces wobble
-        const dx = (p.targetX || 0) - p.x;
-        const dy = (p.targetY || 0) - p.y;
+        const dx = (p.targetX ?? 0) - p.x;
+        const dy = (p.targetY ?? 0) - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         p.targetForce = dist < 5 ? baseForce * 1.5 : baseForce;
       }
@@ -1162,15 +1162,16 @@ export class Organism {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // ── Star field (multi-layer parallax) ──
+    // ── Star field (multi-layer parallax, pre-rendered static + twinkle overlay) ──
     if (this.starField && (this.introPhase !== "genesis")) {
-      const result = this.starField.render(this.time * 0.001, this.parallaxX, this.parallaxY);
+      const result = this.starField.render(this.time * 0.001);
       const introAlpha = this.introPhase === "burst" ? Math.min(1, this.introTimer / 1000) : 1;
       ctx.globalAlpha = introAlpha;
-      for (let li = 0; li < result.layers.length; li++) {
+      for (let li = 0; li < result.staticLayers.length; li++) {
         const px = this.parallaxX * result.parallaxes[li];
         const py = this.parallaxY * result.parallaxes[li];
-        ctx.drawImage(result.layers[li], px, py);
+        ctx.drawImage(result.staticLayers[li], px, py);
+        ctx.drawImage(result.twinkleLayers[li], px, py);
       }
       // Shooting stars on top of star layers
       this.starField.drawShootingStars(ctx);

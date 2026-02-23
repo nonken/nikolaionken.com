@@ -199,11 +199,15 @@ function pickStarColor() {
 export class StarField {
   constructor(w, h) {
     this.layers = []; // 3 depth layers
-    this.canvases = [];
+    // Two canvases per layer: static (pre-rendered) and twinkle (redrawn periodically)
+    this.staticCanvases = [];
+    this.twinkleCanvases = [];
     this.w = 0;
     this.h = 0;
     this.phase = 0;
+    this.lastTwinklePhase = -1;
     this.shootingStars = [];
+    this.nextShootingStarTime = 15000 + Math.random() * 20000;
     this.shootingStarTimer = 0;
     this._generate(w, h);
   }
@@ -212,13 +216,29 @@ export class StarField {
     this.w = w;
     this.h = h;
     this.layers = [];
-    this.canvases = [];
+    this.staticCanvases = [];
+    this.twinkleCanvases = [];
 
     // Milky Way band parameters — diagonal across screen
-    const mwAngle = Math.PI * 0.22; // slight tilt
+    const mwAngle = Math.PI * 0.22;
     const mwCos = Math.cos(mwAngle);
     const mwSin = Math.sin(mwAngle);
-    const mwWidth = Math.max(w, h) * 0.18; // band width
+    const mwWidth = Math.max(w, h) * 0.18;
+
+    // Pre-compute Milky Way patch positions (deterministic per generate)
+    this._mwPatches = [];
+    const mwCx = w / 2;
+    const mwCy = h / 2;
+    const mwLen = Math.max(w, h) * 0.8;
+    for (let i = 0; i < 8; i++) {
+      const t = (i / 7 - 0.5) * mwLen;
+      const scatter = (Math.random() - 0.5) * mwWidth * 0.5;
+      this._mwPatches.push({
+        x: mwCx + Math.cos(mwAngle) * t + Math.sin(mwAngle) * scatter,
+        y: mwCy + Math.sin(mwAngle) * t - Math.cos(mwAngle) * scatter,
+        r: mwWidth * (0.5 + Math.random() * 0.8),
+      });
+    }
 
     // 3 depth layers: far (most stars, dimmest), mid, near (fewest, brightest)
     const layerConfigs = [
@@ -229,22 +249,19 @@ export class StarField {
 
     for (const cfg of layerConfigs) {
       const stars = [];
-      const totalCount = cfg.count;
 
-      for (let i = 0; i < totalCount; i++) {
+      for (let i = 0; i < cfg.count; i++) {
         let x = Math.random() * w;
         let y = Math.random() * h;
 
         // Increase density near Milky Way band
         if (Math.random() < 0.35) {
-          // Project onto MW axis, scatter near it
           const cx = w / 2;
           const cy = h / 2;
           const t = (Math.random() - 0.5) * 2 * Math.max(w, h) * 0.7;
           const scatter = (Math.random() - 0.5) * mwWidth;
           x = cx + mwCos * t + mwSin * scatter;
           y = cy + mwSin * t - mwCos * scatter;
-          // Wrap to screen
           x = ((x % w) + w) % w;
           y = ((y % h) + h) % h;
         }
@@ -284,37 +301,55 @@ export class StarField {
 
       this.layers.push({ stars, parallax: cfg.parallax });
 
-      const c = document.createElement("canvas");
-      c.width = w;
-      c.height = h;
-      this.canvases.push(c);
+      // Static canvas: Milky Way (far layer only) + non-bright stars at base alpha
+      const sc = document.createElement("canvas");
+      sc.width = w;
+      sc.height = h;
+      this.staticCanvases.push(sc);
+
+      // Twinkle canvas: redrawn periodically with current twinkle state
+      const tc = document.createElement("canvas");
+      tc.width = w;
+      tc.height = h;
+      this.twinkleCanvases.push(tc);
     }
 
-    // Pre-render Milky Way nebula glow onto the far layer
-    this._renderMilkyWay(this.canvases[0].getContext("2d"), w, h, mwAngle, mwWidth);
+    // Pre-render static elements once
+    this._renderStatic();
   }
 
-  _renderMilkyWay(ctx, w, h, angle, width) {
-    // Subtle gradient band along the Milky Way axis
-    const cx = w / 2;
-    const cy = h / 2;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const len = Math.max(w, h) * 0.8;
+  _renderStatic() {
+    for (let li = 0; li < this.layers.length; li++) {
+      const ctx = this.staticCanvases[li].getContext("2d");
+      ctx.clearRect(0, 0, this.w, this.h);
 
-    // Draw several overlapping soft patches
-    for (let i = 0; i < 8; i++) {
-      const t = (i / 7 - 0.5) * len;
-      const scatter = (Math.random() - 0.5) * width * 0.5;
-      const px = cx + cos * t + sin * scatter;
-      const py = cy + sin * t - cos * scatter;
-      const r = width * (0.5 + Math.random() * 0.8);
-      const grad = ctx.createRadialGradient(px, py, 0, px, py, Math.max(0.001, r));
+      // Milky Way on far layer only
+      if (li === 0) {
+        this._renderMilkyWay(ctx);
+      }
+
+      // Non-bright stars at their base alpha (no twinkle)
+      const layer = this.layers[li];
+      for (let i = 0; i < layer.stars.length; i++) {
+        const s = layer.stars[i];
+        if (s.bright) continue; // bright stars go in twinkle layer only
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${s.baseAlpha})`;
+        ctx.fill();
+      }
+    }
+  }
+
+  _renderMilkyWay(ctx) {
+    for (const patch of this._mwPatches) {
+      const r = Math.max(0.001, patch.r);
+      const grad = ctx.createRadialGradient(patch.x, patch.y, 0, patch.x, patch.y, r);
       grad.addColorStop(0, `hsla(220, 20%, 60%, 0.025)`);
       grad.addColorStop(0.4, `hsla(200, 15%, 50%, 0.012)`);
       grad.addColorStop(1, "transparent");
       ctx.fillStyle = grad;
-      ctx.fillRect(px - r, py - r, r * 2, r * 2);
+      ctx.fillRect(patch.x - r, patch.y - r, r * 2, r * 2);
     }
   }
 
@@ -324,10 +359,11 @@ export class StarField {
   }
 
   update(dt) {
-    // Update shooting stars
+    // Update shooting stars with fixed threshold
     this.shootingStarTimer += dt;
-    if (this.shootingStarTimer > 15000 + Math.random() * 20000) {
+    if (this.shootingStarTimer > this.nextShootingStarTime) {
       this.shootingStarTimer = 0;
+      this.nextShootingStarTime = 15000 + Math.random() * 20000;
       this._spawnShootingStar();
     }
 
@@ -363,38 +399,45 @@ export class StarField {
     });
   }
 
-  render(phase, parallaxX, parallaxY) {
+  render(phase) {
     this.phase = phase;
 
+    // Throttle twinkle redraws to ~10fps (every 0.1 phase units ≈ 100ms)
+    const phaseStep = Math.floor(phase * 10);
+    if (phaseStep !== this.lastTwinklePhase) {
+      this.lastTwinklePhase = phaseStep;
+      this._renderTwinkle(phase);
+    }
+
+    return {
+      staticLayers: this.staticCanvases,
+      twinkleLayers: this.twinkleCanvases,
+      parallaxes: this.layers.map(l => l.parallax),
+    };
+  }
+
+  _renderTwinkle(phase) {
     for (let li = 0; li < this.layers.length; li++) {
       const layer = this.layers[li];
-      const ctx = this.canvases[li].getContext("2d");
-
-      // Only clear and redraw stars (preserve Milky Way on far layer by re-rendering)
+      const ctx = this.twinkleCanvases[li].getContext("2d");
       ctx.clearRect(0, 0, this.w, this.h);
-
-      // Re-render Milky Way on far layer
-      if (li === 0) {
-        const mwAngle = Math.PI * 0.22;
-        const mwWidth = Math.max(this.w, this.h) * 0.18;
-        this._renderMilkyWay(ctx, this.w, this.h, mwAngle, mwWidth);
-      }
 
       for (let i = 0; i < layer.stars.length; i++) {
         const s = layer.stars[i];
         const twinkle = Math.sin(phase * s.twinkleSpeed + s.twinkleOffset);
-        const alpha = s.baseAlpha + twinkle * 0.15;
-        if (alpha <= 0.01) continue;
-        const a = Math.min(1, alpha);
 
         if (s.bright) {
-          // Bright star with diffraction spikes
+          // Bright stars: full render with spikes (only 17 total, acceptable)
+          const alpha = s.baseAlpha + twinkle * 0.15;
+          if (alpha <= 0.01) continue;
+          const a = Math.min(1, alpha);
+
           ctx.beginPath();
           ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
           ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a})`;
           ctx.fill();
 
-          // Diffraction spikes — 4 thin lines
+          // Diffraction spikes
           const spikeAlpha = a * 0.4;
           ctx.strokeStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${spikeAlpha})`;
           ctx.lineWidth = 0.5;
@@ -407,7 +450,7 @@ export class StarField {
             ctx.stroke();
           }
 
-          // Soft glow around bright stars
+          // Soft glow
           const glowR = Math.max(0.001, s.r * 4);
           const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, glowR);
           glow.addColorStop(0, `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a * 0.3})`);
@@ -415,15 +458,22 @@ export class StarField {
           ctx.fillStyle = glow;
           ctx.fillRect(s.x - glowR, s.y - glowR, glowR * 2, glowR * 2);
         } else {
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a})`;
-          ctx.fill();
+          // Non-bright: only draw twinkle delta (additive alpha variation)
+          const deltaAlpha = twinkle * 0.15;
+          if (Math.abs(deltaAlpha) < 0.02) continue; // skip negligible changes
+          const a = Math.min(1, Math.max(0, s.baseAlpha + deltaAlpha)) - s.baseAlpha;
+          if (Math.abs(a) < 0.01) continue;
+          // For positive delta, draw additive; for negative, we rely on
+          // the composite being static + twinkle (twinkle just adds brightness)
+          if (a > 0) {
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${s.hue}, ${s.sat}%, ${s.light}%, ${a})`;
+            ctx.fill();
+          }
         }
       }
     }
-
-    return { layers: this.canvases, parallaxes: this.layers.map(l => l.parallax) };
   }
 
   drawShootingStars(ctx) {
