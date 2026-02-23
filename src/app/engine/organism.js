@@ -136,6 +136,12 @@ export class Organism {
     // Corona rotation for root node
     this.coronaAngle = 0;
 
+    // 3D cosmic rotation — render-time projection only
+    this.tiltX = 0;
+    this.tiltY = 0;
+    this.tiltZ = 0;
+    this._perspFocal = 800; // perspective focal length in px
+
     // Discovery progress ring
     this.progressAngle = 0;
 
@@ -384,6 +390,20 @@ export class Organism {
     const dt = this.dt;
     this.breathPhase += dt * 0.001 * this.profile.breathRate;
     this.coronaAngle += dt * 0.00008; // slow corona rotation
+
+    // 3D cosmic rotation — ultra-slow tumbling at different rates for non-repeating orbit
+    this.tiltX = Math.sin(this.time * 0.000012) * 0.22; // ±~12.6°
+    this.tiltY = Math.sin(this.time * 0.000008 + 1.3) * 0.25; // ±~14.3°
+    this.tiltZ = Math.sin(this.time * 0.000005 + 2.7) * 0.08; // ±~4.6° subtle roll
+
+    // Cursor adds subtle parallax nudge to tilt
+    if (this.input.state.active) {
+      const mx = (this.input.state.x / window.innerWidth - 0.5);
+      const my = (this.input.state.y / window.innerHeight - 0.5);
+      this.tiltY += mx * 0.04;
+      this.tiltX += my * 0.04;
+    }
+
     this.input.update(0.3);
 
     this.memory.isTouch = this.input.state.isTouch;
@@ -396,6 +416,9 @@ export class Organism {
       this.music.setScale(this.profile.scale);
       this.music.setMood(this.profile.musicMood);
     }
+
+    // Drive music engine LFOs and transitions
+    this.music.update(dt);
 
     // Update star field (shooting stars, etc.)
     if (this.starField) {
@@ -898,15 +921,20 @@ export class Organism {
 
     if (nearest && nearest !== this.resonanceTarget && this.resonanceCooldown <= 0) {
       this.resonanceTarget = nearest;
-      this.resonanceCooldown = 3000; // 3s cooldown between resonances
+      this.resonanceCooldown = 1200; // 1.2s cooldown between resonances
       const node = this.memory.nodes.get(nearest);
-      // Subtle text formation with lighter force
-      if (!this.textFormationActive && this.textReleaseTimer <= 0) {
-        this._formText(node.label, 0.015); // softer force than discovery
-        this.discoveredOverlay = node;
-        this.overlayFade = 0.6; // dimmer overlay for resonance
-        this.music.playMelody(stringToMelody(node.label));
+      // Interrupt any active text release to show new node's text immediately
+      if (this.textReleaseTimer > 0) {
+        this._releaseText();
       }
+      if (this.textFormationActive) {
+        this._releaseText();
+        this.textFormationActive = false;
+      }
+      this._formText(node.label, 0.015); // softer force than discovery
+      this.discoveredOverlay = node;
+      this.overlayFade = 0.6; // dimmer overlay for resonance
+      this.music.playMelody(stringToMelody(node.label));
       // Pulse connected nodes
       this.memory.pulseConnected(nearest);
     } else if (!nearest) {
@@ -1147,6 +1175,42 @@ export class Organism {
     this.textFormationTargets = [];
   }
 
+  // ── 3D Projection ──────────────────────────────────────
+
+  _project3D(x, y) {
+    // Translate to center-relative coords
+    const rx = x - this.centerX;
+    const ry = y - this.centerY;
+
+    // Pre-compute trig
+    const sx = Math.sin(this.tiltX), cx = Math.cos(this.tiltX);
+    const sy = Math.sin(this.tiltY), cy = Math.cos(this.tiltY);
+    const sz = Math.sin(this.tiltZ), cz = Math.cos(this.tiltZ);
+
+    // Rotate Y (left/right tumble)
+    let x1 = rx * cy;
+    let z1 = rx * sy; // z starts at 0, so simplified
+
+    // Rotate X (forward/back tilt)
+    let y1 = ry * cx - z1 * sx;
+    let z2 = ry * sx + z1 * cx;
+
+    // Rotate Z (subtle roll)
+    const x2 = x1 * cz - y1 * sz;
+    const y2 = x1 * sz + y1 * cz;
+
+    // Perspective projection
+    const f = this._perspFocal;
+    const scale = f / (f + z2);
+
+    return {
+      x: this.centerX + x2 * scale,
+      y: this.centerY + y2 * scale,
+      scale, // use for sizing — closer = larger
+      z: z2, // for depth sorting
+    };
+  }
+
   // ── Drawing ────────────────────────────────────────────
 
   _draw() {
@@ -1218,21 +1282,21 @@ export class Organism {
     // ── Root node stellar core ──
     const rootNode = this.memory.nodes.get("root");
     if (rootNode?.particle) {
-      const rp = rootNode.particle;
-      this._drawStellarCore(ctx, rp.x, rp.y);
+      const rProj = this._project3D(rootNode.particle.x, rootNode.particle.y);
+      this._drawStellarCore(ctx, rProj.x, rProj.y);
     }
 
     // ── Shockwaves ──
     for (const sw of this.memory.shockwaves) {
+      const swProj = this._project3D(sw.x, sw.y);
       ctx.beginPath();
-      ctx.arc(sw.x, sw.y, sw.radius, 0, TWO_PI);
+      ctx.arc(swProj.x, swProj.y, sw.radius * swProj.scale, 0, TWO_PI);
       ctx.strokeStyle = `hsla(${sw.hue}, 80%, 80%, ${sw.alpha})`;
       ctx.lineWidth = 2;
       ctx.stroke();
-      // Inner ring
       if (sw.radius > 10) {
         ctx.beginPath();
-        ctx.arc(sw.x, sw.y, sw.radius * 0.9, 0, TWO_PI);
+        ctx.arc(swProj.x, swProj.y, sw.radius * 0.9 * swProj.scale, 0, TWO_PI);
         ctx.strokeStyle = `hsla(${sw.hue}, 60%, 90%, ${sw.alpha * 0.4})`;
         ctx.lineWidth = 1;
         ctx.stroke();
@@ -1242,8 +1306,9 @@ export class Organism {
     // ── Network pulse wave (A2) ──
     if (this.networkPulseWave) {
       const npw = this.networkPulseWave;
+      const npProj = this._project3D(npw.x, npw.y);
       ctx.beginPath();
-      ctx.arc(npw.x, npw.y, npw.radius, 0, TWO_PI);
+      ctx.arc(npProj.x, npProj.y, npw.radius * npProj.scale, 0, TWO_PI);
       ctx.strokeStyle = `hsla(${this.profile.accent.h}, 60%, 70%, ${npw.alpha})`;
       ctx.lineWidth = 1.5;
       ctx.stroke();
@@ -1255,18 +1320,15 @@ export class Organism {
       const toNode = this.memory.nodes.get(stream.to);
       if (!fromNode?.particle || !toNode?.particle) continue;
 
-      const x1 = fromNode.particle.x;
-      const y1 = fromNode.particle.y;
-      const x2 = toNode.particle.x;
-      const y2 = toNode.particle.y;
+      const p1 = this._project3D(fromNode.particle.x, fromNode.particle.y);
+      const p2 = this._project3D(toNode.particle.x, toNode.particle.y);
 
       // Curved path with perpendicular offset
-      const mx = (x1 + x2) / 2;
-      const my = (y1 + y2) / 2;
-      const dx = x2 - x1;
-      const dy = y2 - y1;
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      // Perpendicular offset for curve
       const perpX = -dy / len * 20;
       const perpY = dx / len * 20;
       const cpx = mx + perpX;
@@ -1274,8 +1336,8 @@ export class Organism {
 
       // Faint connection line
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.quadraticCurveTo(cpx, cpy, p2.x, p2.y);
       ctx.strokeStyle = `hsla(${this.profile.primary.h}, 50%, 50%, 0.08)`;
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -1284,9 +1346,8 @@ export class Organism {
       for (const fp of stream.particles) {
         const t = fp.t;
         const mt = 1 - t;
-        // Quadratic bezier point
-        const px = mt * mt * x1 + 2 * mt * t * cpx + t * t * x2;
-        const py = mt * mt * y1 + 2 * mt * t * cpy + t * t * y2;
+        const px = mt * mt * p1.x + 2 * mt * t * cpx + t * t * p2.x;
+        const py = mt * mt * p1.y + 2 * mt * t * cpy + t * t * p2.y;
         ctx.beginPath();
         ctx.arc(px, py, 1.5, 0, TWO_PI);
         ctx.fillStyle = `hsla(${this.profile.accent.h}, 80%, 70%, 0.5)`;
@@ -1300,12 +1361,14 @@ export class Organism {
       const toNode = this.memory.nodes.get(trail.to);
       if (!fromNode?.particle || !toNode?.particle) continue;
 
+      const fp1 = this._project3D(fromNode.particle.x, fromNode.particle.y);
+      const fp2 = this._project3D(toNode.particle.x, toNode.particle.y);
       const progress = trail.age / trail.maxAge;
       const alpha = 1 - progress;
 
       ctx.beginPath();
-      ctx.moveTo(fromNode.particle.x, fromNode.particle.y);
-      ctx.lineTo(toNode.particle.x, toNode.particle.y);
+      ctx.moveTo(fp1.x, fp1.y);
+      ctx.lineTo(fp2.x, fp2.y);
       ctx.strokeStyle = `hsla(${this.profile.accent.h}, 80%, 60%, ${alpha * 0.3})`;
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -1313,8 +1376,8 @@ export class Organism {
       const streamCount = 5;
       for (let i = 0; i < streamCount; i++) {
         const t = ((progress * 3 + i / streamCount) % 1);
-        const sx = fromNode.particle.x + (toNode.particle.x - fromNode.particle.x) * t;
-        const sy = fromNode.particle.y + (toNode.particle.y - fromNode.particle.y) * t;
+        const sx = fp1.x + (fp2.x - fp1.x) * t;
+        const sy = fp1.y + (fp2.y - fp1.y) * t;
         ctx.beginPath();
         ctx.arc(sx, sy, 1.5, 0, TWO_PI);
         ctx.fillStyle = `hsla(${this.profile.accent.h}, 90%, 70%, ${alpha * 0.6})`;
@@ -1331,36 +1394,47 @@ export class Organism {
       if (!isFinite(p.x) || !isFinite(p.y) || p.radius <= 0) continue;
 
       // Snap rendering: when particle is near its text target, use target position for rendering
-      let drawX = p.x;
-      let drawY = p.y;
+      let srcX = p.x;
+      let srcY = p.y;
       if (p.targetX !== null && p.targetForce > 0) {
         const dx = p.targetX - p.x;
         const dy = p.targetY - p.y;
         if (dx * dx + dy * dy < 4) { // within 2px
-          drawX = p.targetX;
-          drawY = p.targetY;
+          srcX = p.targetX;
+          srcY = p.targetY;
         }
       }
+
+      // 3D projection
+      const proj = this._project3D(srcX, srcY);
+      const drawX = proj.x;
+      const drawY = proj.y;
+      const depthScale = proj.scale;
+
+      // Scaled radius for depth
+      const pRadius = p.radius * depthScale;
 
       // Trail
       if (p.trail.length > 1) {
         ctx.beginPath();
-        ctx.moveTo(p.trail[0].x, p.trail[0].y);
+        const tp0 = this._project3D(p.trail[0].x, p.trail[0].y);
+        ctx.moveTo(tp0.x, tp0.y);
         for (let t = 1; t < p.trail.length; t++) {
-          ctx.lineTo(p.trail[t].x, p.trail[t].y);
+          const tp = this._project3D(p.trail[t].x, p.trail[t].y);
+          ctx.lineTo(tp.x, tp.y);
         }
         ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.15})`;
-        ctx.lineWidth = p.radius * 0.5;
+        ctx.lineWidth = pRadius * 0.5;
         ctx.stroke();
       }
 
-      // Glow (using drawX/drawY for snap rendering)
+      // Glow — depth-scaled
       if (p.isMemory) {
         const node = this.memory.nodes.get(p.memoryId);
         const isIdentity = node?.type === "identity";
 
         if (isIdentity && node?.discovered) {
-          const nebulaR = Math.max(0.001, p.radius * 12);
+          const nebulaR = Math.max(0.001, pRadius * 12);
           const nebulaGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, nebulaR);
           nebulaGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.15})`);
           nebulaGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation - 10}%, ${p.lightness - 10}%, ${p.alpha * p.life * 0.06})`);
@@ -1368,7 +1442,7 @@ export class Organism {
           ctx.fillStyle = nebulaGlow;
           ctx.fillRect(drawX - nebulaR, drawY - nebulaR, nebulaR * 2, nebulaR * 2);
         } else {
-          const glowSize = Math.max(0.001, p.radius * 8);
+          const glowSize = Math.max(0.001, pRadius * 8);
           const particleGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, glowSize);
           particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
           particleGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.1})`);
@@ -1377,21 +1451,21 @@ export class Organism {
           ctx.fillRect(drawX - glowSize, drawY - glowSize, glowSize * 2, glowSize * 2);
         }
       } else if (glowSprite) {
-        const spriteSize = p.radius * 3;
+        const spriteSize = pRadius * 3;
         ctx.globalAlpha = p.alpha * p.life * 0.3;
         ctx.drawImage(glowSprite, drawX - spriteSize, drawY - spriteSize, spriteSize * 2, spriteSize * 2);
         ctx.globalAlpha = 1;
       }
 
-      // Core
+      // Core — depth-scaled
       const breathScale = p.isMemory ? 1 + Math.sin(p.breathPhase + this.breathPhase * 3) * 0.15 : 1;
-      const r = p.radius * breathScale;
+      const r = pRadius * breathScale;
       ctx.beginPath();
       ctx.arc(drawX, drawY, r, 0, TWO_PI);
       ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 15}%, ${p.alpha * p.life})`;
       ctx.fill();
 
-      // Memory indicator
+      // Memory indicator — depth-scaled
       if (p.isMemory) {
         const node = this.memory.nodes.get(p.memoryId);
 
@@ -1399,7 +1473,7 @@ export class Organism {
         const isFocused = this.focusedMemoryIndex >= 0 && this.memoryIds[this.focusedMemoryIndex] === p.memoryId;
         if (isFocused) {
           ctx.beginPath();
-          ctx.arc(drawX, drawY, p.radius * 3.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, pRadius * 3.5, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, 0.8)`;
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -1408,13 +1482,13 @@ export class Organism {
         if (node?.discovered) {
           // Discovered: solid ring
           ctx.beginPath();
-          ctx.arc(drawX, drawY, p.radius * 2.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, pRadius * 2.5, 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0.6)`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
           // Resonance pulse (A1)
           if (node.resonancePulse > 0) {
-            const pulseR = p.radius * (3 + (1 - node.resonancePulse) * 8);
+            const pulseR = pRadius * (3 + (1 - node.resonancePulse) * 8);
             ctx.beginPath();
             ctx.arc(drawX, drawY, pulseR, 0, TWO_PI);
             ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, ${node.resonancePulse * 0.5})`;
@@ -1429,7 +1503,7 @@ export class Organism {
           const approachBoost = node.approachGlow * 0.4;
           const baseAlpha = isWarming ? 0.45 : 0.15 + irregularPulse * 0.15;
           const pulseAlpha = baseAlpha + flicker * 0.1 + approachBoost;
-          const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5;
+          const pulseRadius = pRadius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5;
 
           ctx.beginPath();
           ctx.arc(drawX, drawY, pulseRadius, 0, TWO_PI);
@@ -1439,7 +1513,7 @@ export class Organism {
 
           // Approach: gravitational lensing
           if (node.approachGlow > 0.1) {
-            const lensR = 30 + node.approachGlow * 25;
+            const lensR = (30 + node.approachGlow * 25) * depthScale;
             const lensGlow = ctx.createRadialGradient(drawX, drawY, 0, drawX, drawY, Math.max(0.001, lensR));
             lensGlow.addColorStop(0, `hsla(${p.hue}, 60%, 70%, ${node.approachGlow * 0.15})`);
             lensGlow.addColorStop(1, "transparent");
@@ -1450,10 +1524,10 @@ export class Organism {
           // Warming label preview
           if (isWarming) {
             ctx.globalAlpha = 0.3;
-            ctx.font = `500 10px "Space Grotesk", sans-serif`;
+            ctx.font = `500 ${Math.round(10 * depthScale)}px "Space Grotesk", sans-serif`;
             ctx.textAlign = "center";
             ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 20}%, 0.5)`;
-            ctx.fillText(node.label, drawX, drawY - 20);
+            ctx.fillText(node.label, drawX, drawY - 20 * depthScale);
             ctx.globalAlpha = 1;
           }
         }
@@ -1462,14 +1536,14 @@ export class Organism {
 
     // ── Discovery progress ring around core ──
     if (this.memory.discovered.size > 0 && rootNode?.particle) {
-      const rp = rootNode.particle;
+      const rpProj = this._project3D(rootNode.particle.x, rootNode.particle.y);
       const total = MEMORIES.length;
       const discovered = this.memory.discovered.size;
       const targetAngle = (discovered / total) * TWO_PI;
       this.progressAngle += (targetAngle - this.progressAngle) * 0.05;
 
       ctx.beginPath();
-      ctx.arc(rp.x, rp.y, 35, -Math.PI / 2, -Math.PI / 2 + this.progressAngle);
+      ctx.arc(rpProj.x, rpProj.y, 35 * rpProj.scale, -Math.PI / 2, -Math.PI / 2 + this.progressAngle);
       ctx.strokeStyle = `hsla(${this.profile.accent.h}, 80%, 65%, 0.4)`;
       ctx.lineWidth = 1.5;
       ctx.stroke();
