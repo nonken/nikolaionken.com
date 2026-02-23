@@ -162,7 +162,7 @@ export function getGlowSprite(size) {
   _glowCanvas.width = s;
   _glowCanvas.height = s;
   const ctx = _glowCanvas.getContext("2d");
-  const grad = ctx.createRadialGradient(size, size, 0, size, size, size);
+  const grad = ctx.createRadialGradient(size, size, 0, size, size, Math.max(0.001, size));
   grad.addColorStop(0, "rgba(255,255,255,1)");
   grad.addColorStop(0.4, "rgba(255,255,255,0.3)");
   grad.addColorStop(1, "rgba(255,255,255,0)");
