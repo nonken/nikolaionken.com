@@ -579,6 +579,15 @@ export class Organism {
       }
 
       p.verletStep(dt, damping);
+
+      // Clamp to prevent NaN/Infinity propagation from unbounded physics
+      if (!isFinite(p.x) || !isFinite(p.y)) {
+        p.x = cx;
+        p.y = cy;
+        p.px = cx;
+        p.py = cy;
+      }
+
       p.updateTrail();
 
       if (p.decay > 0) {
@@ -782,7 +791,7 @@ export class Organism {
       const pulseSize = 3 + Math.sin(this.time * 0.005) * 2;
       const size = pulseSize * progress;
       const gi = 0.6 * progress;
-      const grad = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, size * 10);
+      const grad = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, Math.max(0.001, size * 10));
       grad.addColorStop(0, `hsla(${this.profile.primary.h}, 80%, 90%, ${gi})`);
       grad.addColorStop(0.3, `hsla(${this.profile.primary.h}, 70%, 70%, ${gi * 0.5})`);
       grad.addColorStop(1, "transparent");
@@ -798,7 +807,7 @@ export class Organism {
 
     // ── Ambient nebula glow (wider than before) ──
     const glowR = this.organismRadius * 1.8;
-    const ambGlow = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, glowR);
+    const ambGlow = ctx.createRadialGradient(this.centerX, this.centerY, 0, this.centerX, this.centerY, Math.max(0.001, glowR));
     const gi = this.profile.glowIntensity * 0.03;
     const ph = this.profile.primary.h;
     ambGlow.addColorStop(0, `hsla(${ph}, 70%, 50%, ${gi})`);
@@ -911,6 +920,7 @@ export class Organism {
 
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
+      if (!isFinite(p.x) || !isFinite(p.y) || p.radius <= 0) continue;
 
       // Trail
       if (p.trail.length > 1) {
@@ -931,7 +941,7 @@ export class Organism {
 
         if (isIdentity && node?.discovered) {
           // Identity nodes: diffuse nebula cloud
-          const nebulaR = p.radius * 12;
+          const nebulaR = Math.max(0.001, p.radius * 12);
           const nebulaGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nebulaR);
           nebulaGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.15})`);
           nebulaGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation - 10}%, ${p.lightness - 10}%, ${p.alpha * p.life * 0.06})`);
@@ -940,7 +950,7 @@ export class Organism {
           ctx.fillRect(p.x - nebulaR, p.y - nebulaR, nebulaR * 2, nebulaR * 2);
         } else {
           // Work/root nodes: brighter focused glow
-          const glowSize = p.radius * 8;
+          const glowSize = Math.max(0.001, p.radius * 8);
           const particleGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
           particleGlow.addColorStop(0, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.4})`);
           particleGlow.addColorStop(0.5, `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, ${p.alpha * p.life * 0.1})`);
@@ -1003,7 +1013,7 @@ export class Organism {
           // Approach: gravitational lensing — attract nearby star field visually
           if (node.approachGlow > 0.1) {
             const lensR = 30 + node.approachGlow * 25;
-            const lensGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, lensR);
+            const lensGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, Math.max(0.001, lensR));
             lensGlow.addColorStop(0, `hsla(${p.hue}, 60%, 70%, ${node.approachGlow * 0.15})`);
             lensGlow.addColorStop(1, "transparent");
             ctx.fillStyle = lensGlow;
@@ -1056,7 +1066,7 @@ export class Organism {
 
       const cursorBreath = 1 + Math.sin(this.breathPhase * 2) * 0.2;
       const cursorR = 4 * cursorBreath;
-      const cursorGlow = ctx.createRadialGradient(curX, curY, 0, curX, curY, cursorR * 4);
+      const cursorGlow = ctx.createRadialGradient(curX, curY, 0, curX, curY, Math.max(0.001, cursorR * 4));
       cursorGlow.addColorStop(0, `hsla(${this.profile.primary.h}, 80%, 80%, 0.6)`);
       cursorGlow.addColorStop(0.5, `hsla(${this.profile.primary.h}, 70%, 60%, 0.15)`);
       cursorGlow.addColorStop(1, "transparent");
@@ -1095,7 +1105,7 @@ export class Organism {
 
     // Outer halo
     const haloR = size * 3;
-    const halo = ctx.createRadialGradient(x, y, 0, x, y, haloR);
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.001, haloR));
     halo.addColorStop(0, `hsla(${this.profile.accent.h}, 70%, 80%, 0.08)`);
     halo.addColorStop(0.4, `hsla(${this.profile.primary.h}, 60%, 60%, 0.03)`);
     halo.addColorStop(1, "transparent");
@@ -1120,7 +1130,7 @@ export class Organism {
 
     // Inner core glow
     const innerR = size * 1.2;
-    const inner = ctx.createRadialGradient(x, y, 0, x, y, innerR);
+    const inner = ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.001, innerR));
     inner.addColorStop(0, `hsla(${this.profile.accent.h}, 50%, 95%, 0.6)`);
     inner.addColorStop(0.3, `hsla(${this.profile.accent.h}, 60%, 80%, 0.25)`);
     inner.addColorStop(0.7, `hsla(${this.profile.primary.h}, 70%, 60%, 0.08)`);
