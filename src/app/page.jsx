@@ -30,6 +30,7 @@ export default function Home() {
     const org = new Organism(canvas);
     organismRef.current = org;
     org.start();
+    const completeTimers = [];
 
     // Intro complete callback — show UI elements
     org.onIntroComplete(() => {
@@ -73,12 +74,14 @@ export default function Home() {
     org.onConstellationComplete(() => {
       setConstellationComplete(true);
       setShowCompleteMsg(true);
-      setTimeout(() => setShowCompleteMsg(false), 5000);
+      const t1 = setTimeout(() => setShowCompleteMsg(false), 5000);
       // C2: Show circadian hint after completion celebration
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         setShowCircadianHint(true);
-        setTimeout(() => setShowCircadianHint(false), 6000);
+        const t3 = setTimeout(() => setShowCircadianHint(false), 6000);
+        completeTimers.push(t3);
       }, 6000);
+      completeTimers.push(t1, t2);
     });
 
     // Throttled position sync
@@ -97,6 +100,7 @@ export default function Home() {
       clearTimeout(hintTimer);
       clearTimeout(hintFadeTimer);
       clearTimeout(secondHintTimer);
+      completeTimers.forEach(clearTimeout);
       clearInterval(syncInterval);
       org.destroy();
       organismRef.current = null;
@@ -116,7 +120,7 @@ export default function Home() {
       if (node?.discovered && node?.url) {
         window.open(node.url, "_blank", "noopener,noreferrer");
       } else if (node?.discovered) {
-        org._revisitNode(nearest);
+        org.revisitNode(nearest);
       }
     }
   }, []);

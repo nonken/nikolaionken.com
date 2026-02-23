@@ -81,6 +81,7 @@ export class Organism {
     this.networkPulseTimer = 0;
     this.networkPulseWave = null;
     this.stellarWindTimer = 0;
+    this._originalAnchors = new Map(); // snapshot of anchors at completion time
 
     // Space-key auto-tour (C3)
     this.tourActive = false;
@@ -430,10 +431,6 @@ export class Organism {
       this.idleTimer = 0;
       this.idleTextTimer = 0; // reset idle text timer on any input
       this.isIdle = false;
-      if (this.tourActive) {
-        // Cancel tour on user interaction
-        this.stopTour();
-      }
     } else {
       this.idleTimer += dt;
       if (this.idleTimer > 3000) {
@@ -505,6 +502,17 @@ export class Organism {
     // ── Check constellation completion ──
     if (!this.constellationComplete && this.memoriesPlaced && this.memory.discovered.size === MEMORIES.length) {
       this.constellationComplete = true;
+      // Snapshot original anchor positions for orbital drift
+      for (const [id, node] of this.memory.nodes) {
+        if (node.anchorX !== null) {
+          const dx = node.anchorX - this.centerX;
+          const dy = node.anchorY - this.centerY;
+          this._originalAnchors.set(id, {
+            dist: Math.sqrt(dx * dx + dy * dy) || 1,
+            angle: Math.atan2(dy, dx),
+          });
+        }
+      }
       this._buildTourOrder();
       if (this._onConstellationComplete) this._onConstellationComplete();
     }
@@ -848,16 +856,15 @@ export class Organism {
 
   // ── Constellation breathing (A2) ──
   _updateCompletedConstellation(dt) {
-    // Orbital drift — slow orbit of work nodes around root
+    // Orbital drift — slow constant-velocity orbit of work nodes around root
     this.orbitPhase += dt * 0.00003;
     for (const [id, node] of this.memory.nodes) {
       if (node.type !== "work" || !node.particle || !node.discovered) continue;
-      const dx = node.anchorX - this.centerX;
-      const dy = node.anchorY - this.centerY;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const angle = Math.atan2(dy, dx) + this.orbitPhase;
-      node.anchorX = this.centerX + Math.cos(angle) * dist;
-      node.anchorY = this.centerY + Math.sin(angle) * dist;
+      const orig = this._originalAnchors.get(id);
+      if (!orig) continue;
+      const angle = orig.angle + this.orbitPhase;
+      node.anchorX = this.centerX + Math.cos(angle) * orig.dist;
+      node.anchorY = this.centerY + Math.sin(angle) * orig.dist;
     }
 
     // Connection pulse waves — periodic network-wide pulse from root
@@ -915,6 +922,10 @@ export class Organism {
   }
 
   // ── Click-to-revisit (A3) ──
+  revisitNode(id) {
+    return this._revisitNode(id);
+  }
+
   _revisitNode(id) {
     const node = this.memory.nodes.get(id);
     if (!node?.discovered || !node.particle) return;
@@ -1551,7 +1562,10 @@ export class Organism {
       this.input.state.py = node.particle.y;
       this.input.state.x = node.particle.x;
       this.input.state.y = node.particle.y;
-      this.input.state.active = true;
+      // Don't set active during tour — it would trigger tour cancellation
+      if (!this.tourActive) {
+        this.input.state.active = true;
+      }
     }
   }
 
