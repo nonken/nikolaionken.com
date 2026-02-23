@@ -66,6 +66,35 @@ export class Organism {
     this.idlePulseTimer = 0;
     this.isIdle = false;
 
+    // Idle text formation (B1)
+    this.idleTextTimer = 0;
+    this.idleTextCooldown = 0;
+    this.idleTextIndex = 0;
+
+    // Cursor resonance (A1) — post-completion hover interactions
+    this.resonanceTarget = null;
+    this.resonanceCooldown = 0;
+
+    // Constellation complete state (A2)
+    this.constellationComplete = false;
+    this.orbitPhase = 0;
+    this.networkPulseTimer = 0;
+    this.networkPulseWave = null;
+    this.stellarWindTimer = 0;
+    this._originalAnchors = new Map(); // snapshot of anchors at completion time
+
+    // Space-key auto-tour (C3)
+    this.tourActive = false;
+    this.tourIndex = 0;
+    this.tourTimer = 0;
+    this.tourNodeOrder = []; // filled on completion
+
+    // Click-to-revisit (A3) — exposed for page.jsx
+    this._onRevisit = null;
+
+    // Completion callback (C1)
+    this._onConstellationComplete = null;
+
     // Cached memory particle list
     this._memoryParticles = [];
 
@@ -397,9 +426,11 @@ export class Organism {
       }
     }
 
-    // Idle detection
-    if (this.input.state.active) {
+    // Idle detection (tour counts as active — don't trigger idle during auto-tour)
+    if (this.input.state.active || this.tourActive) {
       this.idleTimer = 0;
+      this.idleTextTimer = 0; // reset idle text timer on any input
+      this.idleTextCooldown = 0; // reset cooldown so it doesn't accumulate across idle periods
       this.isIdle = false;
     } else {
       this.idleTimer += dt;
@@ -432,6 +463,59 @@ export class Organism {
           });
         }
       }
+    }
+
+    // ── Idle text formation (B1) ──
+    if (this.isIdle && this.memoriesPlaced && this.introPhase === "ready") {
+      this.idleTextTimer += dt;
+      this.idleTextCooldown -= dt;
+      if (this.idleTextTimer > 8000 && this.idleTextCooldown <= 0 && !this.textFormationActive && this.textReleaseTimer <= 0) {
+        this.idleTextCooldown = 10000; // 10s between idle texts
+        this.idleTextTimer = 8000; // keep timer at threshold
+        const labels = this._getIdleTextLabels();
+        if (labels.length > 0) {
+          const label = labels[this.idleTextIndex % labels.length];
+          this.idleTextIndex++;
+          this._formText(label);
+          this.discoveredOverlay = { label, desc: null };
+          this.overlayFade = 1.0;
+          this.music.playMelody(stringToMelody(label));
+        }
+      }
+    }
+
+    // ── Cursor resonance (A1) — post-completion hover ──
+    if (this.constellationComplete && this.input.state.active && this.introPhase === "ready") {
+      this.resonanceCooldown -= dt;
+      this._updateResonance(dt);
+    }
+
+    // ── Constellation breathing (A2) — post-completion ambient life ──
+    if (this.constellationComplete) {
+      this._updateCompletedConstellation(dt);
+    }
+
+    // ── Auto-tour (C3) ──
+    if (this.tourActive) {
+      this._updateTour(dt);
+    }
+
+    // ── Check constellation completion ──
+    if (!this.constellationComplete && this.memoriesPlaced && this.memory.discovered.size === MEMORIES.length) {
+      this.constellationComplete = true;
+      // Snapshot original anchor positions for orbital drift
+      for (const [id, node] of this.memory.nodes) {
+        if (node.anchorX !== null) {
+          const dx = node.anchorX - this.centerX;
+          const dy = node.anchorY - this.centerY;
+          this._originalAnchors.set(id, {
+            dist: Math.sqrt(dx * dx + dy * dy) || 1,
+            angle: Math.atan2(dy, dx),
+          });
+        }
+      }
+      this._buildTourOrder();
+      if (this._onConstellationComplete) this._onConstellationComplete();
     }
 
     // Swipe scatter
@@ -626,12 +710,23 @@ export class Organism {
       const node = this.memory.nodes.get(this.memory.activeNode);
       if (!node.musicPlayed) {
         node.musicPlayed = true;
+        // D2: First discovery has amplified effects
+        const isFirstDiscovery = this.memory.discovered.size === 1;
         const melody = stringToMelody(node.label);
         this.music.playMelody(melody);
         this.discoveredOverlay = node;
-        this.overlayFade = 1.0;
+        this.overlayFade = isFirstDiscovery ? 1.5 : 1.0; // longer overlay for first
 
         this._formText(node.label);
+
+        // D2: amplified shockwave for first discovery — replace the normal
+        // shockwave already pushed by discover() to avoid a double shockwave
+        if (isFirstDiscovery && node.particle && this.memory.shockwaves.length > 0) {
+          const last = this.memory.shockwaves[this.memory.shockwaves.length - 1];
+          last.maxRadius = 600;
+          last.speed = 400;
+          last.alpha = 1.0;
+        }
 
         const rx = this.organismRadius * 0.9;
         const ry = this.organismRadius * 0.75;
@@ -709,11 +804,213 @@ export class Organism {
     }
   }
 
-  _formText(text) {
+  // ── Idle text labels (B1) ──
+  _getIdleTextLabels() {
+    const labels = [];
+    for (const [, node] of this.memory.nodes) {
+      if (node.discovered) labels.push(node.label);
+    }
+    if (labels.length === 0) labels.push("nikolai onken");
+    return labels;
+  }
+
+  // ── Cursor resonance (A1) ──
+  _updateResonance(dt) {
+    const px = this.input.state.px;
+    const py = this.input.state.py;
+    const resonanceRadius = 80;
+    let nearest = null;
+    let nearestDist = Infinity;
+
+    for (const [id, node] of this.memory.nodes) {
+      if (!node.particle || !node.discovered) continue;
+      const dx = node.particle.x - px;
+      const dy = node.particle.y - py;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < resonanceRadius && dist < nearestDist) {
+        nearestDist = dist;
+        nearest = id;
+      }
+    }
+
+    if (nearest && nearest !== this.resonanceTarget && this.resonanceCooldown <= 0) {
+      this.resonanceTarget = nearest;
+      this.resonanceCooldown = 3000; // 3s cooldown between resonances
+      const node = this.memory.nodes.get(nearest);
+      // Subtle text formation with lighter force
+      if (!this.textFormationActive && this.textReleaseTimer <= 0) {
+        this._formText(node.label, 0.015); // softer force than discovery
+        this.discoveredOverlay = node;
+        this.overlayFade = 0.6; // dimmer overlay for resonance
+        this.music.playMelody(stringToMelody(node.label));
+      }
+      // Pulse connected nodes
+      this.memory.pulseConnected(nearest);
+    } else if (!nearest) {
+      this.resonanceTarget = null;
+    }
+  }
+
+  // ── Constellation breathing (A2) ──
+  _updateCompletedConstellation(dt) {
+    // Orbital drift — slow constant-velocity orbit of work nodes around root
+    this.orbitPhase += dt * 0.00003;
+    for (const [id, node] of this.memory.nodes) {
+      if (node.type !== "work" || !node.particle || !node.discovered) continue;
+      const orig = this._originalAnchors.get(id);
+      if (!orig) continue;
+      const angle = orig.angle + this.orbitPhase;
+      node.anchorX = this.centerX + Math.cos(angle) * orig.dist;
+      node.anchorY = this.centerY + Math.sin(angle) * orig.dist;
+    }
+
+    // Connection pulse waves — periodic network-wide pulse from root
+    this.networkPulseTimer += dt;
+    if (this.networkPulseTimer > 8000) { // every 8 seconds
+      this.networkPulseTimer = 0;
+      const rootNode = this.memory.nodes.get("root");
+      if (rootNode?.particle) {
+        this.networkPulseWave = {
+          x: rootNode.particle.x,
+          y: rootNode.particle.y,
+          radius: 0,
+          maxRadius: this.organismRadius * 2,
+          speed: 200,
+          alpha: 0.3,
+        };
+      }
+    }
+    if (this.networkPulseWave) {
+      this.networkPulseWave.radius += this.networkPulseWave.speed * dt * 0.001;
+      this.networkPulseWave.alpha = 0.3 * (1 - this.networkPulseWave.radius / this.networkPulseWave.maxRadius);
+      if (this.networkPulseWave.radius >= this.networkPulseWave.maxRadius) {
+        this.networkPulseWave = null;
+      }
+    }
+
+    // Stellar wind — flowing particle currents between node clusters
+    this.stellarWindTimer += dt;
+    if (this.stellarWindTimer > 1200 && this.pool.count < 350) {
+      this.stellarWindTimer = 0;
+      const memParticles = this._memoryParticles;
+      if (memParticles.length >= 2) {
+        const src = memParticles[Math.floor(Math.random() * memParticles.length)];
+        const dst = memParticles[Math.floor(Math.random() * memParticles.length)];
+        if (src !== dst) {
+          const dx = dst.x - src.x;
+          const dy = dst.y - src.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const speed = 0.4 + Math.random() * 0.4;
+          this.pool.add(src.x, src.y, {
+            generation: 1,
+            radius: 0.8 + Math.random() * 0.8,
+            hue: (src.hue + dst.hue) / 2,
+            saturation: src.saturation,
+            lightness: src.lightness + 15,
+            alpha: 0.25,
+            decay: 0.008,
+            maxTrail: this.profile.trailLength + 2,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+          });
+        }
+      }
+    }
+  }
+
+  // ── Click-to-revisit (A3) ──
+  revisitNode(id) {
+    return this._revisitNode(id);
+  }
+
+  _revisitNode(id) {
+    const node = this.memory.nodes.get(id);
+    if (!node?.discovered || !node.particle) return;
+    // Replay shockwave
+    this.memory.shockwaves.push({
+      x: node.particle.x,
+      y: node.particle.y,
+      radius: 0,
+      maxRadius: 300,
+      speed: 500,
+      alpha: 0.6,
+      hue: node.particle.hue,
+    });
+    // Release any active text formation before forming new text
+    if (this.textFormationActive) this._releaseText();
+    // Replay text formation + overlay
+    this._formText(node.label);
+    this.discoveredOverlay = node;
+    this.overlayFade = 1.0;
+    this.music.playMelody(stringToMelody(node.label));
+    // Pulse connected nodes
+    this.memory.pulseConnected(id);
+    if (this._onRevisit) this._onRevisit(id);
+  }
+
+  // ── Auto-tour (C3) ──
+  _buildTourOrder() {
+    // Chronological: work nodes by year, then identity nodes
+    const work = MEMORIES.filter(m => m.type === "work").sort((a, b) => (a.year || 0) - (b.year || 0)).map(m => m.id);
+    const identity = MEMORIES.filter(m => m.type === "identity").map(m => m.id);
+    this.tourNodeOrder = ["root", ...work, ...identity];
+  }
+
+  _updateTour(dt) {
+    this.tourTimer += dt;
+    if (this.tourTimer > 4000) { // 4s per node
+      this.tourTimer = 0;
+      this.tourIndex++;
+      if (this.tourIndex >= this.tourNodeOrder.length) {
+        this.tourActive = false;
+        this.tourIndex = 0;
+        return;
+      }
+      const id = this.tourNodeOrder[this.tourIndex];
+      this._revisitNode(id);
+      this._focusMemory(id);
+    }
+  }
+
+  startTour() {
+    if (this.tourNodeOrder.length === 0) return;
+    this.tourActive = true;
+    this.tourIndex = 0;
+    this.tourTimer = 0;
+    const id = this.tourNodeOrder[0];
+    this._revisitNode(id);
+    this._focusMemory(id);
+  }
+
+  stopTour() {
+    this.tourActive = false;
+  }
+
+  // ── Find nearest discovered node to a screen position ──
+  findNearestNode(x, y, maxDist) {
+    let nearest = null;
+    let nearestDist = maxDist || Infinity;
+    for (const [id, node] of this.memory.nodes) {
+      if (!node.discovered || !node.particle) continue;
+      const dx = node.particle.x - x;
+      const dy = node.particle.y - y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = id;
+      }
+    }
+    return nearest;
+  }
+
+  _formText(text, force) {
+    const targetForce = force || 0.03;
+    // B3: denser sampling for short labels
+    const step = text.length <= 8 ? 2 : 3;
     const fontSize = Math.min(48, window.innerWidth / text.length * 0.8);
     const width = text.length * fontSize;
     const height = fontSize * 2;
-    const positions = textToPositions(text, fontSize, width, height);
+    const positions = textToPositions(text, fontSize, width, height, step);
 
     const offsetX = this.centerX - width / 2;
     const offsetY = this.centerY - height / 2 - 80;
@@ -727,6 +1024,33 @@ export class Organism {
         const db = (b.x - textCenterX) ** 2 + (b.y - textCenterY) ** 2;
         return da - db;
       });
+
+    // B3: spawn temporary particles if not enough available
+    const needed = positions.length;
+    const deficit = needed - available.length;
+    if (deficit > 0) {
+      const toSpawn = Math.min(deficit, 150);
+      for (let i = 0; i < toSpawn; i++) {
+        const angle = Math.random() * TWO_PI;
+        const dist = 50 + Math.random() * 150;
+        const px = textCenterX + Math.cos(angle) * dist;
+        const py = textCenterY + Math.sin(angle) * dist;
+        const p = this.pool.add(px, py, {
+          generation: 1,
+          radius: 0.8 + Math.random() * 0.8,
+          hue: this.profile.primary.h,
+          saturation: this.profile.primary.s,
+          lightness: this.profile.primary.l + 10,
+          alpha: 0.5,
+          decay: 0.015, // auto-decay after release
+          maxTrail: 2,
+          vx: 0,
+          vy: 0,
+        });
+        if (p) available.push(p);
+      }
+    }
+
     const usable = Math.min(available.length, positions.length);
 
     this.textFormationActive = true;
@@ -737,7 +1061,7 @@ export class Organism {
       const p = available[i];
       p.targetX = positions[i].x + offsetX;
       p.targetY = positions[i].y + offsetY;
-      p.targetForce = 0.03;
+      p.targetForce = targetForce;
       this.textFormationTargets.push(p);
     }
   }
@@ -839,6 +1163,16 @@ export class Organism {
         ctx.lineWidth = 1;
         ctx.stroke();
       }
+    }
+
+    // ── Network pulse wave (A2) ──
+    if (this.networkPulseWave) {
+      const npw = this.networkPulseWave;
+      ctx.beginPath();
+      ctx.arc(npw.x, npw.y, npw.radius, 0, TWO_PI);
+      ctx.strokeStyle = `hsla(${this.profile.accent.h}, 60%, 70%, ${npw.alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
 
     // ── Flowing connection streams ──
@@ -994,6 +1328,15 @@ export class Organism {
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0.6)`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
+          // Resonance pulse (A1)
+          if (node.resonancePulse > 0) {
+            const pulseR = p.radius * (3 + (1 - node.resonancePulse) * 8);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pulseR, 0, TWO_PI);
+            ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, ${node.resonancePulse * 0.5})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
         } else if (node) {
           // Undiscovered: flickering anomaly
           const flicker = Math.sin(node.flickerPhase) * 0.5 + 0.5;
@@ -1077,6 +1420,18 @@ export class Organism {
       ctx.arc(curX, curY, cursorR, 0, TWO_PI);
       ctx.fillStyle = `hsla(${this.profile.primary.h}, 80%, 85%, 0.7)`;
       ctx.fill();
+    }
+
+    // ── Text formation glow (B3) ──
+    if (this.textFormationActive && this.textFormationTargets.length > 0) {
+      const tCenterY = this.centerY - 80;
+      const glowR = Math.max(0.001, this.organismRadius * 0.4);
+      const tGlow = ctx.createRadialGradient(this.centerX, tCenterY, 0, this.centerX, tCenterY, glowR);
+      tGlow.addColorStop(0, `hsla(${this.profile.primary.h}, 60%, 60%, 0.06)`);
+      tGlow.addColorStop(0.5, `hsla(${this.profile.primary.h}, 50%, 50%, 0.02)`);
+      tGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = tGlow;
+      ctx.fillRect(this.centerX - glowR, tCenterY - glowR, glowR * 2, glowR * 2);
     }
 
     // ── Discovered content overlay ──
@@ -1177,11 +1532,25 @@ export class Organism {
         if (this._onDiscoveryChange) this._onDiscoveryChange();
       } else if (node?.discovered && node?.url) {
         window.open(node.url, "_blank", "noopener,noreferrer");
+      } else if (node?.discovered) {
+        // A3: Revisit identity/root nodes that have no URL
+        this._revisitNode(id);
+      }
+    } else if (e.key === " ") {
+      // C3: Space key toggles auto-tour (only when constellation is complete)
+      e.preventDefault();
+      if (this.constellationComplete) {
+        if (this.tourActive) {
+          this.stopTour();
+        } else {
+          this.startTour();
+        }
       }
     } else if (e.key === "Escape") {
       this.overlayFade = 0;
       this.discoveredOverlay = null;
       if (this.textFormationActive) this._startGracefulRelease();
+      if (this.tourActive) this.stopTour();
     }
   }
 
@@ -1192,7 +1561,10 @@ export class Organism {
       this.input.state.py = node.particle.y;
       this.input.state.x = node.particle.x;
       this.input.state.y = node.particle.y;
-      this.input.state.active = true;
+      // Don't set active during tour — it would trigger tour cancellation
+      if (!this.tourActive) {
+        this.input.state.active = true;
+      }
     }
   }
 
@@ -1224,6 +1596,14 @@ export class Organism {
 
   onIntroComplete(fn) {
     this._onIntroComplete = fn;
+  }
+
+  onConstellationComplete(fn) {
+    this._onConstellationComplete = fn;
+  }
+
+  onRevisit(fn) {
+    this._onRevisit = fn;
   }
 
   enableAudio() {
