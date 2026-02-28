@@ -1385,7 +1385,7 @@ export class Organism {
 
       // Core
       const breathScale = p.isMemory ? 1 + Math.sin(p.breathPhase + this.breathPhase * 3) * 0.15 : 1;
-      const r = p.radius * breathScale;
+      const r = Math.max(0.001, p.radius * breathScale);
       ctx.beginPath();
       ctx.arc(drawX, drawY, r, 0, TWO_PI);
       ctx.fillStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness + 15}%, ${p.alpha * p.life})`;
@@ -1399,7 +1399,7 @@ export class Organism {
         const isFocused = this.focusedMemoryIndex >= 0 && this.memoryIds[this.focusedMemoryIndex] === p.memoryId;
         if (isFocused) {
           ctx.beginPath();
-          ctx.arc(drawX, drawY, p.radius * 3.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, Math.max(0.001, p.radius * 3.5), 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, 0.8)`;
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -1408,13 +1408,13 @@ export class Organism {
         if (node?.discovered) {
           // Discovered: solid ring
           ctx.beginPath();
-          ctx.arc(drawX, drawY, p.radius * 2.5, 0, TWO_PI);
+          ctx.arc(drawX, drawY, Math.max(0.001, p.radius * 2.5), 0, TWO_PI);
           ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, ${p.lightness}%, 0.6)`;
           ctx.lineWidth = 0.5;
           ctx.stroke();
           // Resonance pulse (A1)
           if (node.resonancePulse > 0) {
-            const pulseR = p.radius * (3 + (1 - node.resonancePulse) * 8);
+            const pulseR = Math.max(0.001, p.radius * (3 + (1 - node.resonancePulse) * 8));
             ctx.beginPath();
             ctx.arc(drawX, drawY, pulseR, 0, TWO_PI);
             ctx.strokeStyle = `hsla(${p.hue}, ${p.saturation}%, 80%, ${node.resonancePulse * 0.5})`;
@@ -1429,7 +1429,7 @@ export class Organism {
           const approachBoost = node.approachGlow * 0.4;
           const baseAlpha = isWarming ? 0.45 : 0.15 + irregularPulse * 0.15;
           const pulseAlpha = baseAlpha + flicker * 0.1 + approachBoost;
-          const pulseRadius = p.radius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5;
+          const pulseRadius = Math.max(0.001, p.radius * 2.5 + Math.sin(node.pulsePhase) * 1.5 + flicker * 1.5);
 
           ctx.beginPath();
           ctx.arc(drawX, drawY, pulseRadius, 0, TWO_PI);
