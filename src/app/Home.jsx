@@ -109,7 +109,7 @@ export default function Home({ buildYear }) {
           &copy; {year} {PROFILE.name}
         </p>
         <p className="colophon__note">
-          The mark adds a ring each year since {PROFILE.firstYear}; {year}&rsquo;s is
+          The mark&rsquo;s outer ring fills as the year passes; {year} is
           {fraction != null ? ` ${Math.round(fraction * 100)}% grown.` : " still growing."}
         </p>
       </footer>
