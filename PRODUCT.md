@@ -8,15 +8,15 @@ web
 
 ## Users
 
-A mixed audience arriving from a link or a search for the name: founders and collaborators sizing up a potential partner, engineers and hiring folks gauging technical depth, investors and partners connected to Asymmetric, and friends or curious people wanting the person behind the work. All of them want to know, fast, who Nikolai is, what the work has been, and where to reach out.
+A mixed audience arriving from a link or a search for the name: founders and collaborators sizing up a potential partner, engineers and hiring folks gauging technical depth, investors and partners, and friends or curious people wanting the person behind the work. All of them want to know, fast, who Nikolai is, what the work has been, and where to reach out.
 
 ## Product Purpose
 
-Personal homepage for Nikolai Onken: coder, builder, musician; CTO at Asymmetric. Success is a visitor understanding the person and the body of work within one short read, and following a link out to a project.
+Personal homepage for Nikolai Onken: coder, builder, musician; CEO at Unknown Inc. (since 2026; previously CTO at Asymmetric, 2018 to March 2026). Success is a visitor understanding the person and the body of work within one short read, and following a link out to a project.
 
 ## Positioning
 
-A long, continuous builder's arc (Dojo Toolkit in 2008 through uxebu, Cloud9/AWS, Asymmetric, and current AI products) held together with a life outside code: music, nature, people, the universe.
+A long, continuous builder's arc (Dojo Toolkit in 2008 through uxebu, Cloud9/AWS, Asymmetric, AI products, and now Unknown Inc.) held together with a life outside code: music, nature, people, the universe.
 
 ## Capabilities and Constraints
 

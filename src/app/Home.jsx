@@ -189,7 +189,7 @@ export default function Home({ buildYear }) {
             <a href={PROFILE.now.url} target="_blank" rel="noopener noreferrer">
               {PROFILE.now.label}
             </a>
-            .
+            {PROFILE.now.label.endsWith(".") ? "" : "."}
           </p>
         </header>
 
