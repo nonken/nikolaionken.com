@@ -1,45 +1,30 @@
 # nikolaionken.com
 
-Personal website and blog for Nikolai Onken — coder, builder, musician.
+Personal website for Nikolai Onken — coder, builder, musician.
 
-Built with [Next.js](https://nextjs.org) and deployed on [Vercel](https://vercel.com).
+A single page: a generated tree cross-section with one growth ring per year since 2008 (the outer ring fills in as the current year passes), beside a dated list of work. Hovering a project highlights the ring it grew in.
 
-## Tech Stack
+## Stack
 
-- **Framework:** Next.js 16 (App Router)
-- **Language:** TypeScript
-- **Rendering:** React 19 with `react-markdown` for blog content
-- **Fonts:** PT Serif (headings) + PT Sans (body) via Google Fonts
-- **Deployment:** Vercel
+- Next.js 16 (App Router), React 19, plain CSS
+- Alegreya Sans via `next/font`
 
-## Project Structure
+## Where things live
 
 ```
-src/
-├── app/
-│   ├── page.tsx            # Homepage
-│   ├── about/page.tsx      # About page
-│   ├── articles/
-│   │   ├── page.tsx        # Articles listing
-│   │   └── [slug]/page.tsx # Individual article pages
-│   ├── layout.tsx          # Root layout with nav and footer
-│   └── globals.css         # Global styles
-└── lib/
-    └── posts.ts            # Post data and utilities
+src/app/
+├── content.js   # all copy: profile, work, links
+├── rings.js     # pure, seeded geometry for the cross-section
+├── Home.jsx     # the page (client component: slice + text)
+├── globals.css  # tokens, layout, slice styling, light/dark
+└── layout.jsx   # fonts and metadata
 ```
+
+To add a project, add an entry to `WORK` in `content.js`; it gets a pin in its year's ring automatically.
 
 ## Development
 
 ```bash
 npm install
 npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the site locally.
-
-## Building
-
-```bash
-npm run build
-npm start
 ```
