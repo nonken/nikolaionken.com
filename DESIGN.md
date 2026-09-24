@@ -152,7 +152,7 @@ Warm unbleached paper, walnut ink in three strengths, and a single moss green, w
 ### Hierarchy
 - **Display** (500, clamp(2rem, 5vw, 2.5rem), line-height 1.1, -0.012em): the name only, once per page, with the mark after it.
 - **Lede** (400, 1.25rem, 1.5, balanced wrap): the one-line self-description. The current-role line below it uses the same size in faded ink.
-- **Title** (600, 1.125rem): section headings ("Work", "Elsewhere"). They are body size; the weight alone makes them headings.
+- **Title** (600, 1.125rem): section headings ("Work", "Experiments", "Elsewhere"). They are body size; the weight alone makes them headings.
 - **Body** (400, 1.125rem / 18px, 1.6, pretty wrap): project notes and running text. Project names use the same size at 500. The measure lands near 65 characters.
 - **Year** (400, body size, tabular lining numerals): the work-list year column, so the years line up. Below 480px it drops to 0.9375rem and sits above its row, shown on every row.
 - **Label** (400, 0.9375rem): the colophon. Its second line is italic.
@@ -166,7 +166,7 @@ Warm unbleached paper, walnut ink in three strengths, and a single moss green, w
 
 A single centred column, `measure` (38rem) wide, with the `gutter` (clamp(1.25rem, 5vw, 2rem)) as side padding. The top padding is `top` (clamp(4rem, 18vh, 10rem)) and the bottom 4rem, so the name sits in the upper third of the first viewport and the work list starts above the fold.
 
-The vertical rhythm: the lede sits `lede` (1.5rem) below the name and the role line `tight` (0.25rem) below that. Each section heading has `section` (4.5rem) above it and `heading-after` (1.25rem) below. Work rows are a two-column grid (`year-column` 3.5rem, then the text) with a `column-gap` (1rem) gap, stacked `row` (0.85rem) apart. When several projects share a year, the repeated year is hidden with `visibility: hidden`, so the column stays aligned and the year reads once. The Elsewhere links sit on one wrapping row (0.5rem by 1.75rem gaps). The colophon sits `colophon` (6rem) below, with `heading-after` of padding above its text.
+The vertical rhythm: the lede sits `lede` (1.5rem) below the name and the role line `tight` (0.25rem) below that. Each section heading has `section` (4.5rem) above it and `heading-after` (1.25rem) below. Work and Experiments rows share one year-list component: a two-column grid (`year-column` 3.5rem, then the text) with a `column-gap` (1rem) gap, stacked `row` (0.85rem) apart. When several projects share a year, the repeated year is hidden with `visibility: hidden`, so the column stays aligned and the year reads once. The Elsewhere links sit on one wrapping row (0.5rem by 1.75rem gaps). The colophon sits `colophon` (6rem) below, with `heading-after` of padding above its text.
 
 **Responsive (one breakpoint, 480px):** each work row stacks, with the year on its own small line above the name and no gap between them. Repeated years show again, so no stacked row reads as undated. Everything else holds; the fluid gutter, top padding and display size carry the rest.
 

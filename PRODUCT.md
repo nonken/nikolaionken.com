@@ -12,7 +12,7 @@ A mixed audience arriving from a link or a search for the name: founders and col
 
 ## Product Purpose
 
-Personal homepage for Nikolai Onken: coder, builder, musician; CEO at Unknown Inc. (since 2026; previously CTO at Asymmetric, 2018 to March 2026). Success is a visitor understanding the person and the body of work within one short read, and following a link out to a project.
+Personal homepage for Nikolai Onken: coder, builder, musician; CEO at Unknown Inc. (since 2026; previously CTO at Asymmetric, 2022 to March 2026). Success is a visitor understanding the person and the body of work within one short read, and following a link out to a project.
 
 ## Positioning
 
