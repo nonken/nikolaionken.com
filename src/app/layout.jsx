@@ -9,7 +9,7 @@ const alegreya = Alegreya_Sans({
 });
 
 const description =
-  "Coder, builder, musician. Lover of nature, humans, and the universe. CTO at Asymmetric.";
+  "Coder, builder, musician. Lover of nature, humans, and the universe. CEO at Unknown Inc.";
 
 export const metadata = {
   title: {
