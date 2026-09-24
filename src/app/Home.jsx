@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { PROFILE, WORK, ELSEWHERE } from "./content.js";
+import { PROFILE, WORK, EXPERIMENTS, ELSEWHERE } from "./content.js";
 
 // The clock is read once on the client; the server render uses the build year.
 let clientNow;
@@ -43,11 +43,36 @@ function Mark({ fraction }) {
   );
 }
 
+function YearList({ items }) {
+  const firstOfYear = (w, i) => i === 0 || items[i - 1].year !== w.year;
+  return (
+    <ol className="work">
+      {items.map((w, i) => (
+        <li key={w.id} className="work__item">
+          <span className="work__year" data-repeat={firstOfYear(w, i) ? undefined : ""}>
+            {w.year}
+          </span>
+          <p className="work__body">
+            {w.url ? (
+              <a className="work__name" href={w.url} target="_blank" rel="noopener noreferrer">
+                {w.name}
+                <Arrow />
+              </a>
+            ) : (
+              <span className="work__name">{w.name}</span>
+            )}
+            {w.note && <span className="work__note"> {w.note}</span>}
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function Home({ buildYear }) {
   const now = useSyncExternalStore(noSubscribe, readNow, () => null);
   const year = now ? now.getFullYear() : buildYear;
   const fraction = now ? yearProgress(now) : null;
-  const firstOfYear = (w, i) => i === 0 || WORK[i - 1].year !== w.year;
 
   return (
     <main className="page">
@@ -68,26 +93,12 @@ export default function Home({ buildYear }) {
 
       <section aria-labelledby="work-title">
         <h2 id="work-title">Work</h2>
-        <ol className="work">
-          {WORK.map((w, i) => (
-            <li key={w.id} className="work__item">
-              <span className="work__year" data-repeat={firstOfYear(w, i) ? undefined : ""}>
-                {w.year}
-              </span>
-              <p className="work__body">
-                {w.url ? (
-                  <a className="work__name" href={w.url} target="_blank" rel="noopener noreferrer">
-                    {w.name}
-                    <Arrow />
-                  </a>
-                ) : (
-                  <span className="work__name">{w.name}</span>
-                )}
-                {w.note && <span className="work__note"> {w.note}</span>}
-              </p>
-            </li>
-          ))}
-        </ol>
+        <YearList items={WORK} />
+      </section>
+
+      <section aria-labelledby="experiments-title">
+        <h2 id="experiments-title">Experiments</h2>
+        <YearList items={EXPERIMENTS} />
       </section>
 
       <section aria-labelledby="elsewhere-title">
