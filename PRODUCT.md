@@ -22,7 +22,8 @@ A long, continuous builder's arc (Dojo Toolkit in 2008 through uxebu, Cloud9/AWS
 
 - Next.js 16 App Router, React 19, deployed as a static-friendly site (CNAME in `public/`).
 - Content source: `src/app/content.js` (PROFILE, WORK, ELSEWHERE). Keep the facts; rewrite presentation only.
-- The previous interactive particle organism and generative music engine are retired (user decision, 2026-09-24). The site should carry a smaller piece of art instead.
+- The previous interactive particle organism and generative music engine are retired (user decision, 2026-09-24).
+- Art is kept to almost nothing: an illustrated growth-rings slice was rejected as "too child like" (owner, 2026-09-24). Typography leads; at most one small, precise mark.
 - Text must be readable immediately, with no discovery mechanic gating content.
 
 ## Brand Commitments
