@@ -7,51 +7,42 @@
 }
 
 :root {
-  --ground: #efe4d2;
-  --ink: #2a1c12;
-  --ink-soft: #6b4d36;
+  --ground: #f4eee4;
+  --ink: #221a14;
+  --ink-soft: #6e5d50;
+  --ink-faint: #766658;
   --moss: #2f5a36;
-  --moss-soft: rgba(47, 90, 54, 0.35);
-  --graphite: #4b433c;
-  --bark: #4a2c1a;
-  --bark-inner: #7a4526;
-  /* Marks drawn on the wood keep one ink in both themes; the wood doesn't change. */
-  --wood-graphite: #4b433c;
-  --wood-moss: #2f5a36;
-  --wood-halo: #f6ecdc;
-  --band: rgba(47, 90, 54, 0.42);
-  --rule: rgba(90, 58, 34, 0.18);
-  --font: var(--font-text), "Gill Sans", "Seravek", ui-sans-serif, sans-serif;
+  --moss-soft: rgba(47, 90, 54, 0.32);
+  --rule: rgba(60, 40, 25, 0.12);
+  --font: var(--font-text), "Iowan Old Style", "Charter", Georgia, serif;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ground: #1d140e;
-    --ink: #eedfc8;
-    --ink-soft: #b99b7d;
+    --ground: #1a1511;
+    --ink: #ece2d4;
+    --ink-soft: #ab9a89;
+    --ink-faint: #968573;
     --moss: #a9c98f;
-    --moss-soft: rgba(169, 201, 143, 0.35);
-    --graphite: #efe2cf;
-    --bark: #573521;
-    --bark-inner: #7a4526;
-    --rule: rgba(238, 223, 200, 0.14);
+    --moss-soft: rgba(169, 201, 143, 0.32);
+    --rule: rgba(236, 226, 212, 0.1);
     color-scheme: dark;
   }
 }
 
 html {
   -webkit-text-size-adjust: 100%;
-  scrollbar-color: var(--ink-soft) var(--ground);
+  scrollbar-color: var(--ink-faint) var(--ground);
 }
 
 body {
   background: var(--ground);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 1.1875rem;
-  line-height: 1.55;
-  font-variant-numeric: lining-nums;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -73,22 +64,22 @@ a:hover {
   text-decoration-color: currentColor;
 }
 a:focus-visible {
-  outline: 2px solid var(--moss);
+  outline: 1.5px solid var(--moss);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 1px;
 }
 
 .arrow {
-  width: 0.62em;
-  height: 0.62em;
-  margin-left: 0.2em;
-  vertical-align: 0.02em;
+  width: 0.55em;
+  height: 0.55em;
+  margin-left: 0.18em;
+  vertical-align: 0.04em;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.4;
+  stroke-width: 1.3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.55;
+  opacity: 0.75;
   transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms ease-out;
 }
 a:hover .arrow,
@@ -97,99 +88,91 @@ a:focus-visible .arrow {
   transform: translate(0.08em, -0.08em);
 }
 
-/* ── Layout ─────────────────────────────────────── */
+/* ── Page ───────────────────────────────────────── */
 
 .page {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-  column-gap: clamp(2rem, 5vw, 6rem);
-  padding-inline: clamp(1.25rem, 4vw, 4.5rem);
-  max-width: 96rem;
+  max-width: 38rem;
   margin-inline: auto;
+  padding-inline: clamp(1.25rem, 5vw, 2rem);
+  padding-block: clamp(4rem, 18vh, 10rem) 4rem;
 }
-
-.art {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.slice {
-  display: block;
-  width: min(100%, 86vh);
-  height: auto;
-  overflow: visible;
-}
-
-.art__caption {
-  max-width: 30rem;
-  font-size: 0.9375rem;
-  font-style: italic;
-  line-height: 1.4;
-  color: var(--ink-soft);
-  text-align: center;
-  text-wrap: balance;
-}
-
-.text {
-  max-width: 34rem;
-  padding-block: clamp(4rem, 16vh, 10rem) 4rem;
-}
-
-/* ── Text ───────────────────────────────────────── */
 
 h1 {
-  font-size: clamp(2.5rem, 4.4vw, 3.5rem);
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: clamp(2rem, 5vw, 2.5rem);
   font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.015em;
+  line-height: 1.1;
+  letter-spacing: -0.012em;
+}
+
+.mark {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 0.7;
+}
+.mark__rest {
+  stroke: var(--ink-faint);
+  stroke-width: 0.6;
+  stroke-dasharray: 0.4 2;
+  stroke-linecap: round;
+}
+.mark__year {
+  stroke: var(--moss);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mark__year {
+    stroke-dasharray: 120;
+    animation: draw 1400ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+  }
+}
+@keyframes draw {
+  from { stroke-dashoffset: 120; }
+  to { stroke-dashoffset: 0; }
 }
 
 .intro__lede {
-  margin-top: 1.25rem;
-  font-size: 1.375rem;
-  line-height: 1.4;
+  margin-top: 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.5;
   text-wrap: balance;
 }
 
 .intro__now {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
   color: var(--ink-soft);
 }
 
 h2 {
-  margin-top: 4rem;
-  margin-bottom: 0.875rem;
-  font-size: 1.375rem;
-  font-weight: 500;
-  font-style: italic;
-  line-height: 1.2;
+  margin-top: 4.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 
 .work {
   list-style: none;
-  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: 0.85rem;
 }
 
 .work__item {
   display: grid;
-  grid-template-columns: 3.25rem 1fr;
+  grid-template-columns: 3.5rem 1fr;
   gap: 1rem;
-  padding-block: 0.7rem;
-  border-bottom: 1px solid var(--rule);
-  transition: background-color 200ms ease-out;
 }
 
 .work__year {
   font-variant-numeric: tabular-nums lining-nums;
   color: var(--ink-soft);
-  transition: color 200ms ease-out;
 }
 .work__year[data-repeat] {
   visibility: hidden;
@@ -210,10 +193,6 @@ span.work__name {
   color: var(--ink-soft);
 }
 
-.work__item[data-on] .work__year {
-  color: var(--moss);
-}
-
 .elsewhere {
   list-style: none;
   display: flex;
@@ -222,163 +201,26 @@ span.work__name {
 }
 
 .colophon {
-  margin-top: 5rem;
+  margin-top: 6rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
   font-size: 0.9375rem;
   color: var(--ink-soft);
 }
-
-/* ── The slice ──────────────────────────────────── */
-
-.slice__band {
-  fill: var(--band);
-  opacity: 0;
-  transition: opacity 220ms ease-out;
-  pointer-events: none;
-}
-.slice__band[data-on] {
-  opacity: 1;
-}
-
-.slice__pencil {
-  stroke: var(--wood-graphite);
-  stroke-opacity: 0.8;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-}
-.slice__pencil text {
-  stroke: none;
-  fill: var(--wood-graphite);
-  font-family: var(--font);
-  font-size: 27px;
-  font-weight: 500;
+.colophon__note {
+  margin-top: 0.25rem;
   font-style: italic;
-  font-variant-numeric: lining-nums;
 }
 
-.slice__arc {
-  fill: none;
-  stroke: var(--wood-moss);
-  stroke-width: 4;
-  stroke-linecap: round;
-}
-
-.slice__pencil text:not(.slice__end) {
-  paint-order: stroke;
-  stroke: var(--wood-halo);
-  stroke-opacity: 0.5;
-  stroke-width: 5px;
-  stroke-linejoin: round;
-}
-/* The end of the core line and its year sit on the page, not the wood. */
-.slice__pencil .slice__end {
-  fill: var(--graphite);
-}
-.slice__pencil .slice__outside {
-  stroke: var(--graphite);
-}
-
-.slice__rest {
-  fill: none;
-  stroke: var(--wood-graphite);
-  stroke-opacity: 0.45;
-  stroke-width: 1.6;
-  stroke-dasharray: 1 7;
-  stroke-linecap: round;
-}
-
-.slice__tip {
-  fill: var(--wood-moss);
-  stroke: var(--wood-halo);
-  stroke-width: 3;
-}
-
-.slice__pin {
-  fill: var(--wood-moss);
-  stroke: var(--wood-halo);
-  stroke-width: 3;
-  cursor: pointer;
-  transition: r 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.slice__label {
-  font-family: var(--font);
-  font-size: 30px;
-  font-weight: 500;
-  fill: var(--ink);
-  paint-order: stroke;
-  stroke: var(--ground);
-  stroke-width: 7px;
-  stroke-linejoin: round;
-  pointer-events: none;
-}
-.slice__label-year {
-  font-weight: 400;
-  font-style: italic;
-  fill: var(--ink-soft);
-}
-
-/* Growth: the slice is revealed from the pith outward, then the year draws on. */
-@media (prefers-reduced-motion: no-preference) {
-  .slice__grow {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: grow 1800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+@media (max-width: 480px) {
+  .work__item {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
-  .slice__pencil,
-  .slice__pins,
-  .slice__rest,
-  .slice__tip {
-    animation: settle 700ms ease-out 1300ms both;
+  .work__year[data-repeat] {
+    visibility: visible;
   }
-  .slice__arc {
-    stroke-dasharray: 1;
-    animation: draw 1100ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
-  }
-}
-
-@keyframes grow {
-  from { transform: scale(0.02); }
-  to { transform: scale(1); }
-}
-@keyframes settle {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
-}
-
-/* ── Narrow screens: slice on top, text below ──── */
-
-@media (max-width: 860px) {
-  .page {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .art {
-    position: static;
-    height: auto;
-    padding-top: 2rem;
-  }
-  .slice {
-    width: min(90%, 28rem);
-  }
-  .text {
-    padding-block: 3rem 3rem;
-    margin-inline: auto;
-    width: 100%;
-  }
-  body {
-    font-size: 1.125rem;
-  }
-  h2 {
-    margin-top: 3rem;
-  }
-  .slice__pencil text {
-    font-size: 44px;
-  }
-  .slice__pencil .slice__minor,
-  .slice__pencil .slice__end {
-    display: none;
+  .work__year {
+    font-size: 0.9375rem;
   }
 }
