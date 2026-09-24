@@ -1,4 +1,3 @@
-/* Reset */
 *,
 *::before,
 *::after {
@@ -8,445 +7,378 @@
 }
 
 :root {
-  --void: #0a0a0f;
-  --glow: #4ecdc4;
-  --glow-warm: #ff6b6b;
-  --text: #e8e8e8;
-  --text-muted: #6b7280;
-  --text-dim: #3d4250;
-  --font-family-mono: "IBM Plex Mono", monospace;
-  --font-family-sans: "Space Grotesk", sans-serif;
+  --ground: #efe4d2;
+  --ink: #2a1c12;
+  --ink-soft: #6b4d36;
+  --moss: #2f5a36;
+  --moss-soft: rgba(47, 90, 54, 0.35);
+  --graphite: #4b433c;
+  --bark: #4a2c1a;
+  --bark-inner: #7a4526;
+  /* Marks drawn on the wood keep one ink in both themes; the wood doesn't change. */
+  --wood-graphite: #4b433c;
+  --wood-moss: #2f5a36;
+  --wood-halo: #f6ecdc;
+  --band: rgba(47, 90, 54, 0.42);
+  --rule: rgba(90, 58, 34, 0.18);
+  --font: var(--font-text), "Gill Sans", "Seravek", ui-sans-serif, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #1d140e;
+    --ink: #eedfc8;
+    --ink-soft: #b99b7d;
+    --moss: #a9c98f;
+    --moss-soft: rgba(169, 201, 143, 0.35);
+    --graphite: #efe2cf;
+    --bark: #573521;
+    --bark-inner: #7a4526;
+    --rule: rgba(238, 223, 200, 0.14);
+    color-scheme: dark;
+  }
 }
 
 html {
-  font-size: 100%;
   -webkit-text-size-adjust: 100%;
+  scrollbar-color: var(--ink-soft) var(--ground);
 }
 
 body {
-  font-family: var(--font-family-sans);
-  color: var(--text);
-  background: var(--void);
-  min-height: 100vh;
-  overflow: hidden;
-  line-height: 1.6;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: rgba(78, 205, 196, 0.3);
-  color: #fff;
+  background: var(--moss);
+  color: var(--ground);
 }
 
 a {
-  color: var(--glow);
-  text-decoration: none;
+  color: var(--moss);
+  text-decoration: underline;
+  text-decoration-color: var(--moss-soft);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: text-decoration-color 160ms ease-out;
+}
+a:hover {
+  text-decoration-color: currentColor;
 }
 a:focus-visible {
-  outline: 2px solid var(--glow);
-  outline-offset: 2px;
+  outline: 2px solid var(--moss);
+  outline-offset: 3px;
+  border-radius: 2px;
 }
 
-/* ═══════════════════════════════════════════
-   CANVAS — the living constellation
-   ═══════════════════════════════════════════ */
-.organism-canvas {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
+.arrow {
+  width: 0.62em;
+  height: 0.62em;
+  margin-left: 0.2em;
+  vertical-align: 0.02em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 160ms ease-out;
+}
+a:hover .arrow,
+a:focus-visible .arrow {
+  opacity: 1;
+  transform: translate(0.08em, -0.08em);
+}
+
+/* ── Layout ─────────────────────────────────────── */
+
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  column-gap: clamp(2rem, 5vw, 6rem);
+  padding-inline: clamp(1.25rem, 4vw, 4.5rem);
+  max-width: 96rem;
+  margin-inline: auto;
+}
+
+.art {
+  position: sticky;
+  top: 0;
   height: 100vh;
-  z-index: 0;
-  cursor: none;
-}
-
-/* ═══════════════════════════════════════════
-   AUDIO TOGGLE — cosmic integrated style
-   ═══════════════════════════════════════════ */
-.audio-toggle-wrap {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  z-index: 50;
+  height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.slice {
+  display: block;
+  width: min(100%, 86vh);
+  height: auto;
+  overflow: visible;
+}
+
+.art__caption {
+  max-width: 30rem;
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.text {
+  max-width: 34rem;
+  padding-block: clamp(4rem, 16vh, 10rem) 4rem;
+}
+
+/* ── Text ───────────────────────────────────────── */
+
+h1 {
+  font-size: clamp(2.5rem, 4.4vw, 3.5rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+
+.intro__lede {
+  margin-top: 1.25rem;
+  font-size: 1.375rem;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+
+.intro__now {
+  margin-top: 0.5rem;
+  color: var(--ink-soft);
+}
+
+h2 {
+  margin-top: 4rem;
+  margin-bottom: 0.875rem;
+  font-size: 1.375rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.work {
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+
+.work__item {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  gap: 1rem;
+  padding-block: 0.7rem;
+  border-bottom: 1px solid var(--rule);
+  transition: background-color 200ms ease-out;
+}
+
+.work__year {
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ink-soft);
+  transition: color 200ms ease-out;
+}
+.work__year[data-repeat] {
+  visibility: hidden;
+}
+
+.work__body {
+  text-wrap: pretty;
+}
+
+.work__name {
+  font-weight: 500;
+}
+span.work__name {
+  color: var(--ink);
+}
+
+.work__note {
+  color: var(--ink-soft);
+}
+
+.work__item[data-on] .work__year {
+  color: var(--moss);
+}
+
+.elsewhere {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+}
+
+.colophon {
+  margin-top: 5rem;
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+}
+
+/* ── The slice ──────────────────────────────────── */
+
+.slice__band {
+  fill: var(--band);
   opacity: 0;
-  animation: fadeInSlow 1.5s ease forwards;
+  transition: opacity 220ms ease-out;
+  pointer-events: none;
+}
+.slice__band[data-on] {
+  opacity: 1;
 }
 
-.audio-toggle {
-  font-family: var(--font-family-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  background: rgba(10, 10, 15, 0.4);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 3px;
-  padding: 0.35rem 0.7rem;
+.slice__pencil {
+  stroke: var(--wood-graphite);
+  stroke-opacity: 0.8;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.slice__pencil text {
+  stroke: none;
+  fill: var(--wood-graphite);
+  font-family: var(--font);
+  font-size: 27px;
+  font-weight: 500;
+  font-style: italic;
+  font-variant-numeric: lining-nums;
+}
+
+.slice__arc {
+  fill: none;
+  stroke: var(--wood-moss);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.slice__pencil text:not(.slice__end) {
+  paint-order: stroke;
+  stroke: var(--wood-halo);
+  stroke-opacity: 0.5;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+/* The end of the core line and its year sit on the page, not the wood. */
+.slice__pencil .slice__end {
+  fill: var(--graphite);
+}
+.slice__pencil .slice__outside {
+  stroke: var(--graphite);
+}
+
+.slice__rest {
+  fill: none;
+  stroke: var(--wood-graphite);
+  stroke-opacity: 0.45;
+  stroke-width: 1.6;
+  stroke-dasharray: 1 7;
+  stroke-linecap: round;
+}
+
+.slice__tip {
+  fill: var(--wood-moss);
+  stroke: var(--wood-halo);
+  stroke-width: 3;
+}
+
+.slice__pin {
+  fill: var(--wood-moss);
+  stroke: var(--wood-halo);
+  stroke-width: 3;
   cursor: pointer;
-  transition: color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  transition: r 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.audio-toggle__icon {
-  margin-right: 0.25rem;
+.slice__label {
+  font-family: var(--font);
+  font-size: 30px;
+  font-weight: 500;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--ground);
+  stroke-width: 7px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.slice__label-year {
+  font-weight: 400;
+  font-style: italic;
+  fill: var(--ink-soft);
 }
 
-.audio-toggle:hover {
-  color: var(--glow);
-  border-color: rgba(78, 205, 196, 0.15);
+/* Growth: the slice is revealed from the pith outward, then the year draws on. */
+@media (prefers-reduced-motion: no-preference) {
+  .slice__grow {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: grow 1800ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .slice__pencil,
+  .slice__pins,
+  .slice__rest,
+  .slice__tip {
+    animation: settle 700ms ease-out 1300ms both;
+  }
+  .slice__arc {
+    stroke-dasharray: 1;
+    animation: draw 1100ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
+  }
 }
 
-.audio-toggle--active {
-  color: var(--glow);
-  border-color: rgba(78, 205, 196, 0.2);
-  animation: audioGlow 3s ease-in-out infinite;
+@keyframes grow {
+  from { transform: scale(0.02); }
+  to { transform: scale(1); }
 }
-
-.audio-toggle--pulse {
-  animation: audioPulse 1.5s ease-in-out 2;
-}
-
-.audio-toggle__hint {
-  font-family: var(--font-family-mono);
-  font-size: 0.55rem;
-  color: var(--glow);
-  opacity: 0.6;
-  animation: hintFadeIn 0.5s ease-out;
-  white-space: nowrap;
-}
-
-@keyframes audioPulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(78, 205, 196, 0); }
-  50% { box-shadow: 0 0 12px rgba(78, 205, 196, 0.3); border-color: rgba(78, 205, 196, 0.3); color: var(--glow); }
-}
-
-@keyframes audioGlow {
-  0%, 100% { box-shadow: 0 0 4px rgba(78, 205, 196, 0.08); }
-  50% { box-shadow: 0 0 8px rgba(78, 205, 196, 0.15); }
-}
-
-@keyframes fadeInSlow {
+@keyframes settle {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-/* ═══════════════════════════════════════════
-   FOOTER — satellite orbital style
-   ═══════════════════════════════════════════ */
-.footer {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  z-index: 50;
-  font-family: var(--font-family-mono);
-  font-size: 0.5rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  opacity: 0.5;
-  transition: opacity 0.3s;
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
 }
 
-.footer:hover {
-  opacity: 0.8;
-}
+/* ── Narrow screens: slice on top, text below ──── */
 
-.footer__text-link {
-  color: var(--text-dim);
-  transition: color 0.3s;
-  cursor: pointer;
-}
-
-.footer__text-link:hover {
-  color: var(--glow);
-}
-
-.footer__discovery-count {
-  color: var(--glow);
-  opacity: 0.6;
-}
-
-.footer__tour-hint {
-  color: var(--text-dim);
-  opacity: 0.5;
-  transition: opacity 0.3s;
-}
-
-.footer:hover .footer__tour-hint {
-  opacity: 0.8;
-  color: var(--glow);
-}
-
-/* ═══════════════════════════════════════════
-   DISCOVERY HINT
-   ═══════════════════════════════════════════ */
-.discovery-hint {
-  position: fixed;
-  bottom: 4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  font-family: var(--font-family-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  opacity: 0;
-  transition: opacity 1.5s ease;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.discovery-hint--visible {
-  opacity: 0.7;
-}
-
-.discovery-hint--complete {
-  color: var(--glow);
-  animation: completeGlow 2s ease-in-out infinite;
-}
-
-.discovery-hint--circadian {
-  bottom: 5.5rem;
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-@keyframes completeGlow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.9; }
-}
-
-@keyframes hintFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 0.6; transform: translateY(0); }
-}
-
-/* ═══════════════════════════════════════════
-   MEMORY LABELS — crisp DOM text over canvas
-   ═══════════════════════════════════════════ */
-.memory-label {
-  position: fixed;
-  z-index: 5;
-  transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.memory-label__name {
-  display: block;
-  font-family: var(--font-family-sans);
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: rgba(232, 232, 232, 0.75);
-  letter-spacing: 0.03em;
-}
-
-.memory-label__desc {
-  display: block;
-  font-family: var(--font-family-sans);
-  font-size: 0.5rem;
-  color: rgba(180, 180, 180, 0.45);
-  margin-top: 1px;
-}
-
-/* ═══════════════════════════════════════════
-   MEMORY LINKS — clickable overlays
-   ═══════════════════════════════════════════ */
-.memory-link {
-  position: fixed;
-  z-index: 10;
-  transform: translateX(-50%);
-  font-family: var(--font-family-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
-  color: var(--glow);
-  opacity: 0.7;
-  padding: 8px 12px;
-  border-radius: 4px;
-  background: rgba(10, 10, 15, 0.5);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(78, 205, 196, 0.1);
-  transition: opacity 0.3s, background 0.3s, border-color 0.3s, transform 0.2s;
-  pointer-events: auto;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.memory-link:hover {
-  opacity: 1;
-  background: rgba(78, 205, 196, 0.1);
-  border-color: rgba(78, 205, 196, 0.3);
-  color: #fff;
-  transform: translateX(-50%) scale(1.03);
-}
-
-.memory-link:focus-visible {
-  outline: 2px solid var(--glow);
-  outline-offset: 2px;
-  opacity: 1;
-}
-
-/* ═══════════════════════════════════════════
-   SCREEN READER ONLY
-   ═══════════════════════════════════════════ */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ═══════════════════════════════════════════
-   TEXT FALLBACK PAGE
-   ═══════════════════════════════════════════ */
-body:has(.text-page) {
-  overflow: auto;
-}
-
-.text-page {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem;
-  overflow-y: auto;
-  min-height: 100vh;
-}
-
-.text-page h1 {
-  font-family: var(--font-family-mono);
-  font-size: 1.5rem;
-  color: var(--glow);
-  margin-bottom: 0.5rem;
-}
-
-.text-page .text-page__subtitle {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: 2.5rem;
-}
-
-.text-page h2 {
-  font-family: var(--font-family-sans);
-  font-size: 1.1rem;
-  color: var(--text);
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 0.25rem;
-}
-
-.text-page ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.text-page li {
-  padding: 0.5rem 0;
-}
-
-.text-page .text-item__label {
-  font-weight: 500;
-  color: var(--text);
-  font-size: 0.95rem;
-}
-
-.text-page .text-item__desc {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin-left: 0.25rem;
-}
-
-.text-page .text-item__url {
-  display: block;
-  font-family: var(--font-family-mono);
-  font-size: 0.75rem;
-  color: var(--glow);
-  margin-top: 0.15rem;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.text-page .text-item__url:hover {
-  opacity: 1;
-}
-
-.text-page__back {
-  display: inline-block;
-  margin-top: 2rem;
-  font-family: var(--font-family-mono);
-  font-size: 0.8rem;
-  color: var(--glow);
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.text-page__back:hover {
-  opacity: 1;
-}
-
-/* ═══════════════════════════════════════════
-   MOBILE
-   ═══════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 860px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .art {
+    position: static;
+    height: auto;
+    padding-top: 2rem;
+  }
+  .slice {
+    width: min(90%, 28rem);
+  }
+  .text {
+    padding-block: 3rem 3rem;
+    margin-inline: auto;
+    width: 100%;
+  }
   body {
-    overflow: hidden;
+    font-size: 1.125rem;
   }
-
-  .organism-canvas {
-    cursor: default;
+  h2 {
+    margin-top: 3rem;
   }
-
-  .audio-toggle-wrap {
-    bottom: 1rem;
-    right: 1rem;
+  .slice__pencil text {
+    font-size: 44px;
   }
-
-  .audio-toggle {
-    font-size: 0.55rem;
-  }
-
-  .footer {
-    bottom: 1rem;
-    left: 1rem;
-    font-size: 0.45rem;
-  }
-
-  .memory-label__name {
-    font-size: 0.55rem;
-  }
-
-  .memory-label__desc {
-    font-size: 0.45rem;
-  }
-
-  .memory-link {
-    font-size: 0.6rem;
-    padding: 10px 14px;
-    min-height: 44px;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-  }
-
-  .discovery-hint {
-    font-size: 0.55rem;
-    bottom: 3.5rem;
-  }
-
-  .text-page {
-    padding: 2rem 1rem;
+  .slice__pencil .slice__minor,
+  .slice__pencil .slice__end {
+    display: none;
   }
 }

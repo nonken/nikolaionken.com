@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-24T12:49:55+00:00",
+  "title": "Design System: Nikolai Onken",
+  "extensions": {
+    "colorMeta": {
+      "moss": {
+        "role": "primary",
+        "displayName": "Moss",
+        "canonical": "oklch(42.6% 0.076 147.9)",
+        "tonalRamp": [
+          "oklch(15% 0.076 147.9)",
+          "oklch(26% 0.076 147.9)",
+          "oklch(38% 0.076 147.9)",
+          "oklch(50% 0.076 147.9)",
+          "oklch(62% 0.076 147.9)",
+          "oklch(74% 0.076 147.9)",
+          "oklch(85% 0.076 147.9)",
+          "oklch(95% 0.076 147.9)"
+        ]
+      },
+      "moss-dark": {
+        "role": "primary",
+        "displayName": "Pale Sage (dark-mode moss)",
+        "canonical": "oklch(79.8% 0.086 131.6)",
+        "tonalRamp": [
+          "oklch(15% 0.086 131.6)",
+          "oklch(26% 0.086 131.6)",
+          "oklch(38% 0.086 131.6)",
+          "oklch(50% 0.086 131.6)",
+          "oklch(62% 0.086 131.6)",
+          "oklch(74% 0.086 131.6)",
+          "oklch(85% 0.086 131.6)",
+          "oklch(95% 0.086 131.6)"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Unbleached Paper",
+        "canonical": "oklch(92.3% 0.027 80.2)",
+        "tonalRamp": [
+          "oklch(15% 0.027 80.2)",
+          "oklch(26% 0.027 80.2)",
+          "oklch(38% 0.027 80.2)",
+          "oklch(50% 0.027 80.2)",
+          "oklch(62% 0.027 80.2)",
+          "oklch(74% 0.027 80.2)",
+          "oklch(85% 0.027 80.2)",
+          "oklch(95% 0.027 80.2)"
+        ]
+      },
+      "ground-dark": {
+        "role": "neutral",
+        "displayName": "Charred Walnut",
+        "canonical": "oklch(20.1% 0.019 55.1)",
+        "tonalRamp": [
+          "oklch(15% 0.019 55.1)",
+          "oklch(26% 0.019 55.1)",
+          "oklch(38% 0.019 55.1)",
+          "oklch(50% 0.019 55.1)",
+          "oklch(62% 0.019 55.1)",
+          "oklch(74% 0.019 55.1)",
+          "oklch(85% 0.019 55.1)",
+          "oklch(95% 0.019 55.1)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Walnut Ink",
+        "canonical": "oklch(24.1% 0.028 56.4)",
+        "tonalRamp": [
+          "oklch(15% 0.028 56.4)",
+          "oklch(26% 0.028 56.4)",
+          "oklch(38% 0.028 56.4)",
+          "oklch(50% 0.028 56.4)",
+          "oklch(62% 0.028 56.4)",
+          "oklch(74% 0.028 56.4)",
+          "oklch(85% 0.028 56.4)",
+          "oklch(95% 0.028 56.4)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Parchment",
+        "canonical": "oklch(91.0% 0.035 78.7)",
+        "tonalRamp": [
+          "oklch(15% 0.035 78.7)",
+          "oklch(26% 0.035 78.7)",
+          "oklch(38% 0.035 78.7)",
+          "oklch(50% 0.035 78.7)",
+          "oklch(62% 0.035 78.7)",
+          "oklch(74% 0.035 78.7)",
+          "oklch(85% 0.035 78.7)",
+          "oklch(95% 0.035 78.7)"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Faded Ink",
+        "canonical": "oklch(44.7% 0.054 58.3)",
+        "tonalRamp": [
+          "oklch(15% 0.054 58.3)",
+          "oklch(26% 0.054 58.3)",
+          "oklch(38% 0.054 58.3)",
+          "oklch(50% 0.054 58.3)",
+          "oklch(62% 0.054 58.3)",
+          "oklch(74% 0.054 58.3)",
+          "oklch(85% 0.054 58.3)",
+          "oklch(95% 0.054 58.3)"
+        ]
+      },
+      "ink-soft-dark": {
+        "role": "neutral",
+        "displayName": "Faded Parchment",
+        "canonical": "oklch(70.9% 0.055 66.7)",
+        "tonalRamp": [
+          "oklch(15% 0.055 66.7)",
+          "oklch(26% 0.055 66.7)",
+          "oklch(38% 0.055 66.7)",
+          "oklch(50% 0.055 66.7)",
+          "oklch(62% 0.055 66.7)",
+          "oklch(74% 0.055 66.7)",
+          "oklch(85% 0.055 66.7)",
+          "oklch(95% 0.055 66.7)"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(38.9% 0.016 63.5)",
+        "tonalRamp": [
+          "oklch(15% 0.016 63.5)",
+          "oklch(26% 0.016 63.5)",
+          "oklch(38% 0.016 63.5)",
+          "oklch(50% 0.016 63.5)",
+          "oklch(62% 0.016 63.5)",
+          "oklch(74% 0.016 63.5)",
+          "oklch(85% 0.016 63.5)",
+          "oklch(95% 0.016 63.5)"
+        ]
+      },
+      "graphite-dark": {
+        "role": "neutral",
+        "displayName": "Chalk Graphite",
+        "canonical": "oklch(91.8% 0.029 77.5)",
+        "tonalRamp": [
+          "oklch(15% 0.029 77.5)",
+          "oklch(26% 0.029 77.5)",
+          "oklch(38% 0.029 77.5)",
+          "oklch(50% 0.029 77.5)",
+          "oklch(62% 0.029 77.5)",
+          "oklch(74% 0.029 77.5)",
+          "oklch(85% 0.029 77.5)",
+          "oklch(95% 0.029 77.5)"
+        ]
+      },
+      "bark": {
+        "role": "wood",
+        "displayName": "Bark",
+        "canonical": "oklch(32.6% 0.053 51.0)",
+        "tonalRamp": [
+          "oklch(15% 0.053 51.0)",
+          "oklch(26% 0.053 51.0)",
+          "oklch(38% 0.053 51.0)",
+          "oklch(50% 0.053 51.0)",
+          "oklch(62% 0.053 51.0)",
+          "oklch(74% 0.053 51.0)",
+          "oklch(85% 0.053 51.0)",
+          "oklch(95% 0.053 51.0)"
+        ]
+      },
+      "bark-dark": {
+        "role": "wood",
+        "displayName": "Bark (dark mode)",
+        "canonical": "oklch(36.5% 0.058 50.6)",
+        "tonalRamp": [
+          "oklch(15% 0.058 50.6)",
+          "oklch(26% 0.058 50.6)",
+          "oklch(38% 0.058 50.6)",
+          "oklch(50% 0.058 50.6)",
+          "oklch(62% 0.058 50.6)",
+          "oklch(74% 0.058 50.6)",
+          "oklch(85% 0.058 50.6)",
+          "oklch(95% 0.058 50.6)"
+        ]
+      },
+      "bark-inner": {
+        "role": "wood",
+        "displayName": "Inner Bark",
+        "canonical": "oklch(44.8% 0.085 49.6)",
+        "tonalRamp": [
+          "oklch(15% 0.085 49.6)",
+          "oklch(26% 0.085 49.6)",
+          "oklch(38% 0.085 49.6)",
+          "oklch(50% 0.085 49.6)",
+          "oklch(62% 0.085 49.6)",
+          "oklch(74% 0.085 49.6)",
+          "oklch(85% 0.085 49.6)",
+          "oklch(95% 0.085 49.6)"
+        ]
+      },
+      "heartwood-early": {
+        "role": "wood",
+        "displayName": "Heartwood Copper",
+        "canonical": "oklch(65.7% 0.106 57.7)",
+        "tonalRamp": [
+          "oklch(15% 0.106 57.7)",
+          "oklch(26% 0.106 57.7)",
+          "oklch(38% 0.106 57.7)",
+          "oklch(50% 0.106 57.7)",
+          "oklch(62% 0.106 57.7)",
+          "oklch(74% 0.106 57.7)",
+          "oklch(85% 0.106 57.7)",
+          "oklch(95% 0.106 57.7)"
+        ]
+      },
+      "heartwood-late": {
+        "role": "wood",
+        "displayName": "Heartwood Rust",
+        "canonical": "oklch(48.0% 0.099 47.6)",
+        "tonalRamp": [
+          "oklch(15% 0.099 47.6)",
+          "oklch(26% 0.099 47.6)",
+          "oklch(38% 0.099 47.6)",
+          "oklch(50% 0.099 47.6)",
+          "oklch(62% 0.099 47.6)",
+          "oklch(74% 0.099 47.6)",
+          "oklch(85% 0.099 47.6)",
+          "oklch(95% 0.099 47.6)"
+        ]
+      },
+      "sapwood-early": {
+        "role": "wood",
+        "displayName": "Sapwood Straw",
+        "canonical": "oklch(82.7% 0.080 73.8)",
+        "tonalRamp": [
+          "oklch(15% 0.080 73.8)",
+          "oklch(26% 0.080 73.8)",
+          "oklch(38% 0.080 73.8)",
+          "oklch(50% 0.080 73.8)",
+          "oklch(62% 0.080 73.8)",
+          "oklch(74% 0.080 73.8)",
+          "oklch(85% 0.080 73.8)",
+          "oklch(95% 0.080 73.8)"
+        ]
+      },
+      "sapwood-late": {
+        "role": "wood",
+        "displayName": "Sapwood Tan",
+        "canonical": "oklch(66.4% 0.100 62.2)",
+        "tonalRamp": [
+          "oklch(15% 0.100 62.2)",
+          "oklch(26% 0.100 62.2)",
+          "oklch(38% 0.100 62.2)",
+          "oklch(50% 0.100 62.2)",
+          "oklch(62% 0.100 62.2)",
+          "oklch(74% 0.100 62.2)",
+          "oklch(85% 0.100 62.2)",
+          "oklch(95% 0.100 62.2)"
+        ]
+      },
+      "wood-halo": {
+        "role": "wood",
+        "displayName": "Wood Halo",
+        "canonical": "oklch(94.7% 0.024 79.7)",
+        "tonalRamp": [
+          "oklch(15% 0.024 79.7)",
+          "oklch(26% 0.024 79.7)",
+          "oklch(38% 0.024 79.7)",
+          "oklch(50% 0.024 79.7)",
+          "oklch(62% 0.024 79.7)",
+          "oklch(74% 0.024 79.7)",
+          "oklch(85% 0.024 79.7)",
+          "oklch(95% 0.024 79.7)"
+        ]
+      },
+      "wood-graphite": {
+        "role": "wood",
+        "displayName": "Wood Graphite",
+        "canonical": "oklch(38.9% 0.016 63.5)",
+        "tonalRamp": [
+          "oklch(15% 0.016 63.5)",
+          "oklch(26% 0.016 63.5)",
+          "oklch(38% 0.016 63.5)",
+          "oklch(50% 0.016 63.5)",
+          "oklch(62% 0.016 63.5)",
+          "oklch(74% 0.016 63.5)",
+          "oklch(85% 0.016 63.5)",
+          "oklch(95% 0.016 63.5)"
+        ]
+      },
+      "wood-moss": {
+        "role": "wood",
+        "displayName": "Wood Moss",
+        "canonical": "oklch(42.6% 0.076 147.9)",
+        "tonalRamp": [
+          "oklch(15% 0.076 147.9)",
+          "oklch(26% 0.076 147.9)",
+          "oklch(38% 0.076 147.9)",
+          "oklch(50% 0.076 147.9)",
+          "oklch(62% 0.076 147.9)",
+          "oklch(74% 0.076 147.9)",
+          "oklch(85% 0.076 147.9)",
+          "oklch(95% 0.076 147.9)"
+        ]
+      },
+      "band": {
+        "role": "primary",
+        "displayName": "Year Band",
+        "canonical": "rgba(47, 90, 54, 0.42)"
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(90, 58, 34, 0.18)"
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark mode)",
+        "canonical": "rgba(238, 223, 200, 0.14)"
+      },
+      "moss-soft": {
+        "role": "primary",
+        "displayName": "Moss Underline",
+        "canonical": "rgba(47, 90, 54, 0.35)"
+      },
+      "moss-soft-dark": {
+        "role": "primary",
+        "displayName": "Sage Underline",
+        "canonical": "rgba(169, 201, 143, 0.35)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The name, once per page."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "One-line self-description under the name."
+      },
+      "title": {
+        "displayName": "Section Title",
+        "purpose": "Section headings; set in italic at the lede size."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Work notes and the now-line; 1.125rem below 860px."
+      },
+      "body-strong": {
+        "displayName": "Body Strong",
+        "purpose": "Project names in the work list."
+      },
+      "year": {
+        "displayName": "Year",
+        "purpose": "Tabular year column in the work list."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Figure caption (italic) and colophon."
+      },
+      "slice-annotation": {
+        "displayName": "Slice Annotation",
+        "purpose": "SVG text on the drawing, in 1000-unit viewBox space: pencil year labels 27px 500 italic (44px below 860px); pin label 30px 500 with year in 400 italic and a 7px ground halo."
+      }
+    },
+    "shadows": [],
+    "halos": [
+      {
+        "name": "wood-halo-ring",
+        "value": "stroke: #f6ecdc; stroke-width: 3",
+        "purpose": "Lifts pins and the growing-arc tip off the grain."
+      },
+      {
+        "name": "ground-halo-text",
+        "value": "paint-order: stroke; stroke: var(--ground); stroke-width: 7px; stroke-linejoin: round",
+        "purpose": "Keeps the active pin label legible over the rings."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-grow",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Growth, arc draw-on, arrow nudge, pin radius."
+      },
+      {
+        "name": "ease-state",
+        "value": "ease-out",
+        "purpose": "Colour and opacity state changes."
+      },
+      {
+        "name": "duration-underline",
+        "value": "160ms",
+        "purpose": "Link underline and arrow opacity."
+      },
+      {
+        "name": "duration-state",
+        "value": "200ms",
+        "purpose": "Row year colour, arrow nudge, pin radius (220ms for the ring band)."
+      },
+      {
+        "name": "grow",
+        "value": "1800ms scale 0.02 to 1 from the pith",
+        "purpose": "Load reveal of the slice; reduced-motion users see the final state."
+      },
+      {
+        "name": "draw",
+        "value": "1100ms, 900ms delay, stroke-dashoffset 1 to 0",
+        "purpose": "Current-year arc draws on."
+      },
+      {
+        "name": "settle",
+        "value": "700ms ease-out, 1300ms delay, opacity 0 to 1",
+        "purpose": "Pencil line, pins, dotted rest and tip fade in after growth."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "single-column",
+        "value": "860px"
+      }
+    ],
+    "geometry": {
+      "source": "src/app/rings.js",
+      "seed": 20080101,
+      "viewBox": "1000x1000",
+      "juvenileRings": 7,
+      "barkOuterRadius": 452,
+      "coreAngleRad": -0.42,
+      "checkAngleRad": 2.62,
+      "heartToSapBlend": "last 6 rings",
+      "note": "Deterministic so server and client render the same slice."
+    }
+  },
+  "components": [
+    {
+      "name": "Text Link",
+      "kind": "custom",
+      "refersTo": "link",
+      "description": "Moss link with a soft 1px underline that turns solid on hover; moss focus outline.",
+      "html": "<p class=\"ds-p\">CTO at <a class=\"ds-link\" href=\"#\">Asymmetric</a>.</p>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-p{font-family:var(--font);font-size:1.1875rem;line-height:1.55;color:var(--ink-soft);background:var(--ground);padding:1rem}.ds-link{color:var(--moss);text-decoration:underline;text-decoration-color:var(--moss-soft);text-decoration-thickness:1px;text-underline-offset:.22em;transition:text-decoration-color 160ms ease-out}.ds-link:hover{text-decoration-color:currentColor}.ds-link:focus-visible{outline:2px solid var(--moss);outline-offset:3px;border-radius:2px}"
+    },
+    {
+      "name": "Outbound Link",
+      "kind": "custom",
+      "refersTo": "link",
+      "description": "External link ending in the small hand-stroked arrow, which brightens and nudges up-right on hover.",
+      "html": "<a class=\"ds-out\" href=\"#\">GitHub<svg class=\"ds-arrow\" viewBox=\"0 0 12 12\" aria-hidden=\"true\"><path d=\"M3 9 9 3M4.5 3H9v4.5\"/></svg></a>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-out{font-family:var(--font);font-size:1.1875rem;color:var(--moss);text-decoration:underline;text-decoration-color:var(--moss-soft);text-decoration-thickness:1px;text-underline-offset:.22em;transition:text-decoration-color 160ms ease-out}.ds-out:hover{text-decoration-color:currentColor}.ds-out:focus-visible{outline:2px solid var(--moss);outline-offset:3px;border-radius:2px}.ds-arrow{width:.62em;height:.62em;margin-left:.2em;vertical-align:.02em;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.55;transition:transform 200ms cubic-bezier(.16,1,.3,1),opacity 160ms ease-out}.ds-out:hover .ds-arrow,.ds-out:focus-visible .ds-arrow{opacity:1;transform:translate(.08em,-.08em)}"
+    },
+    {
+      "name": "Work Ledger",
+      "kind": "custom",
+      "refersTo": "work-row",
+      "description": "Dated work list: tabular year column, project name and note, hairline dividers; active row turns its year moss.",
+      "html": "<ol class=\"ds-work\"><li class=\"ds-row\"><span class=\"ds-year\">2024</span><p><a class=\"ds-name\" href=\"#\">WarpMetrics</a><span class=\"ds-note\"> AI-powered coding agents.</span></p></li><li class=\"ds-row\"><span class=\"ds-year\">2023</span><p><a class=\"ds-name\" href=\"#\">Mintline</a><span class=\"ds-note\"> AI-powered financial reconciliation.</span></p></li><li class=\"ds-row\"><span class=\"ds-year\" style=\"visibility:hidden\">2023</span><p><a class=\"ds-name\" href=\"#\">DailyDots</a></p></li></ol>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-work{list-style:none;margin:0;padding:1rem;background:var(--ground);font-family:var(--font);font-size:1.1875rem;line-height:1.55;max-width:34rem}.ds-row{display:grid;grid-template-columns:3.25rem 1fr;gap:1rem;padding-block:.7rem;border-bottom:1px solid var(--rule)}.ds-row:first-child{border-top:1px solid var(--rule)}.ds-row p{margin:0;text-wrap:pretty}.ds-year{font-variant-numeric:tabular-nums lining-nums;color:var(--ink-soft);transition:color 200ms ease-out}.ds-row:hover .ds-year,.ds-row:focus-within .ds-year{color:var(--moss)}.ds-name{font-weight:500;color:var(--moss);text-decoration:underline;text-decoration-color:var(--moss-soft);text-underline-offset:.22em}.ds-name:hover{text-decoration-color:currentColor}.ds-name:focus-visible{outline:2px solid var(--moss);outline-offset:3px;border-radius:2px}.ds-note{color:var(--ink-soft)}"
+    },
+    {
+      "name": "Intro Block",
+      "kind": "custom",
+      "refersTo": "section-heading",
+      "description": "Display name, lede, the now-line, and an italic section heading: the whole type ramp in one family.",
+      "html": "<header class=\"ds-intro\"><h1 class=\"ds-h1\">Nikolai Onken</h1><p class=\"ds-lede\">Coder, builder, musician. Lover of nature, humans, and the universe.</p><p class=\"ds-now\">CTO at <a href=\"#\">Asymmetric</a>.</p><h2 class=\"ds-h2\">Work</h2></header>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-intro{font-family:var(--font);color:var(--ink);background:var(--ground);padding:1.5rem;max-width:34rem;font-size:1.1875rem;line-height:1.55}.ds-h1{margin:0;font-size:clamp(2.5rem,4.4vw,3.5rem);font-weight:500;line-height:1;letter-spacing:-.015em}.ds-lede{margin:1.25rem 0 0;font-size:1.375rem;line-height:1.4;text-wrap:balance}.ds-now{margin:.5rem 0 0;color:var(--ink-soft)}.ds-now a{color:var(--moss);text-decoration-color:var(--moss-soft);text-underline-offset:.22em}.ds-now a:hover{text-decoration-color:currentColor}.ds-now a:focus-visible{outline:2px solid var(--moss);outline-offset:3px;border-radius:2px}.ds-h2{margin:4rem 0 .875rem;font-size:1.375rem;font-weight:500;font-style:italic;line-height:1.2}"
+    },
+    {
+      "name": "Elsewhere Row",
+      "kind": "nav",
+      "refersTo": "link",
+      "description": "Wrapping row of outbound profile links; the site's only navigation.",
+      "html": "<ul class=\"ds-else\"><li><a href=\"#\">GitHub</a></li><li><a href=\"#\">X</a></li><li><a href=\"#\">LinkedIn</a></li></ul>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-else{list-style:none;margin:0;padding:1rem;display:flex;flex-wrap:wrap;gap:.5rem 1.75rem;background:var(--ground);font-family:var(--font);font-size:1.1875rem}.ds-else a{color:var(--moss);text-decoration:underline;text-decoration-color:var(--moss-soft);text-decoration-thickness:1px;text-underline-offset:.22em;transition:text-decoration-color 160ms ease-out}.ds-else a:hover{text-decoration-color:currentColor}.ds-else a:focus-visible{outline:2px solid var(--moss);outline-offset:3px;border-radius:2px}"
+    },
+    {
+      "name": "Slice Pin and Label",
+      "kind": "custom",
+      "refersTo": "slice-pin",
+      "description": "Moss pin with a paper halo on the wood; active pin grows and shows its year and name over a ground halo stroke.",
+      "html": "<svg class=\"ds-wood\" viewBox=\"0 0 400 140\" role=\"img\" aria-label=\"Pins on growth rings\"><rect width=\"400\" height=\"140\" fill=\"#c2804c\"/><path d=\"M0 40 H400\" stroke=\"#8a4a27\" stroke-width=\"10\"/><path d=\"M0 100 H400\" stroke=\"#8a4a27\" stroke-width=\"10\"/><circle class=\"ds-pin\" cx=\"60\" cy=\"70\" r=\"8\"/><circle class=\"ds-pin ds-pin--on\" cx=\"160\" cy=\"70\" r=\"12\"/><text class=\"ds-label\" x=\"182\" y=\"70\" dominant-baseline=\"middle\"><tspan class=\"ds-label-year\">2013</tspan><tspan dx=\"12\">Cloud9 IDE</tspan></text></svg>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-wood{display:block;width:100%;max-width:26rem}.ds-pin{fill:#2f5a36;stroke:#f6ecdc;stroke-width:3;cursor:pointer;transition:r 200ms cubic-bezier(.16,1,.3,1)}.ds-pin:hover{r:12}.ds-label{font-family:var(--font);font-size:30px;font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--ground);stroke-width:7px;stroke-linejoin:round}.ds-label-year{font-weight:400;font-style:italic;fill:var(--ink-soft)}"
+    },
+    {
+      "name": "Slice Caption",
+      "kind": "custom",
+      "refersTo": "caption",
+      "description": "Centred italic legend under the drawing.",
+      "html": "<p class=\"ds-cap\">One ring for every year since 2008. The outer ring is 2026, still growing: 73% of the way round.</p>",
+      "css": ":host{--ground:#efe4d2;--ink:#2a1c12;--ink-soft:#6b4d36;--moss:#2f5a36;--moss-soft:rgba(47,90,54,.35);--rule:rgba(90,58,34,.18);--font:\"Alegreya Sans\",\"Gill Sans\",\"Seravek\",ui-sans-serif,sans-serif}.ds-cap{margin:0;padding:1rem;background:var(--ground);max-width:30rem;font-family:var(--font);font-size:.9375rem;font-style:italic;line-height:1.4;color:var(--ink-soft);text-align:center;text-wrap:balance}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The End-Grain Ledger",
+    "overview": "The site is a sawn log read two ways. On one side, an end-grain cross-section, drawn from a seed, with one growth ring per year since 2008. Heartwood sits at the centre and pale sapwood at the edge, inside a rough bark rim. A graphite pencil core line runs from the pith out past the bark, ticking off the years. On the other side is a ledger: the name, one line about the person, the current role, and the dated work as a plain ruled list. The drawing carries the warmth and the art. The text carries the facts and is readable right away, with nothing to discover first.\n\nThe density is low and the tone is quiet. It is one warm paper ground and one humanist sans in a few sizes. The only accent is moss green, and it always means the same thing: this is live, this links, this is the year you are pointing at. The ledger and the drawing are linked. Hovering a work row lights its ring band and grows its pin. Hovering a pin puts that project's year and name on the wood. The outermost ring is the current year. Its green latewood arc is drawn only as far round as the calendar has come.\n\nThe build rejects the full-screen gimmick and the bare résumé page. The art sits beside the text. It never takes over the viewport, and nothing gates the content.",
+    "keyCharacteristics": [
+      "Two columns on desktop: the sticky slice on the left (1.35fr), the text column on the right (1fr, 34rem measure). One column below 860px, with the slice on top.",
+      "One typeface (Alegreya Sans) at weights 400 and 500, plus italic. There is no second face, no uppercase, and no letter-spaced labels.",
+      "Moss is the only accent. Every other colour is paper, ink or wood.",
+      "Flat paper with no shadows. All depth lives inside the drawing (grain, rays, halos).",
+      "Motion happens once, at load: the slice grows from the pith outward, then the current year's arc draws on. Reduced motion shows the finished state."
+    ],
+    "rules": [
+      {
+        "name": "The One Green Rule",
+        "body": "Moss is the only accent, and it only ever marks something live: a link, a pin, the active year, the growing arc, selection or focus. Nothing decorative is green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Wood Doesn't Change Rule",
+        "body": "The slice and every mark drawn on it (pins, core line, arc, band) keep one palette in both themes. Only the paper, the ink and the marks drawn on the paper change. New marks on the wood take `wood-*` tokens. New marks on the paper take the theme tokens.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper-Not-Grey Rule",
+        "body": "Every neutral is a warm brown. The ground is paper or charred walnut, never a neutral grey or pure black or white.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Everything is Alegreya Sans. Hierarchy comes only from size, weight (400/500) and italic. Do not add a second face, a mono, uppercase or tracking.",
+        "section": "typography"
+      },
+      {
+        "name": "The Italic-Annotates Rule",
+        "body": "Italic is the voice of annotation: section headings, the caption, the year labels on the wood, and the year in a pin label. Italic is not used for emphasis in running text.",
+        "section": "typography"
+      },
+      {
+        "name": "The Beside-Not-Behind Rule",
+        "body": "The art sits beside the text on desktop and above it on mobile. It never sits behind the text or fills the viewport, and the text never waits on it.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "Nothing on the paper casts a shadow. When a mark on the drawing needs lifting, give it a halo stroke in a paper tone.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Grown-Not-Drawn Rule",
+        "body": "Curves on the drawing come from the seeded geometry (rings.js, seed 20080101), so the slice is identical on the server and the client. Do not hand-place or hand-tune ring shapes.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Two-Way Pointer Rule",
+        "body": "Every item in the ledger has one pin on the wood, and pointing at either one lights the other. A new dated item must get a pin and a band. A new mark on the wood must correspond to a real, dated fact.",
+        "section": "components"
+      },
+      {
+        "name": "The Pith-Outward Rule",
+        "body": "Motion only tells the story of growth: once, at load, from the centre outward. There are no scroll effects, loops or ambient motion.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do keep moss as the only accent, and use it only for live things: links, pins, the active year, the growing arc, focus and selection.",
+      "Do draw new marks on the wood with the `wood-*` tokens so they look the same in both themes, and give them a `wood-halo` or `ground` halo stroke where they cross the grain.",
+      "Do set every year in the text column with tabular lining numerals, and hide a repeated year with `visibility: hidden` so the column holds its place.",
+      "Do keep text to a 34rem measure, at 19px/1.55 on desktop and 18px below 860px.",
+      "Do generate any new geometry from the seeded generator in rings.js, so the server and client renders match.",
+      "Do put load motion behind `prefers-reduced-motion: no-preference` and keep it as growth from the pith."
+    ],
+    "donts": [
+      "Don't add a second typeface, uppercase labels, letter-spaced eyebrows, or a mono for the years.",
+      "Don't put box-shadows, cards, rounded containers or tinted panels on the paper. The text column is hairlines and type only.",
+      "Don't let the slice fill the viewport, sit behind the text, or hold back any content.",
+      "Don't use a neutral grey, pure black or pure white. Every neutral is a warm brown.",
+      "Don't add decorative green. If it's moss, it's interactive or it marks the current year."
+    ]
+  }
+}
